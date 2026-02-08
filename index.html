@@ -612,6 +612,40 @@
         </div>
       </div>
     </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen hidden">
+      <header class="app-header">
+        <button id="settings-back-btn" class="icon-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M5 12L12 19M5 12L12 5"/>
+          </svg>
+        </button>
+        <div class="header-logo">
+          <span class="logo-text">Settings</span>
+        </div>
+        <div style="width: 40px;"></div> <!-- Spacer -->
+      </header>
+      
+      <main class="dashboard-main">
+        <section class="log-section">
+          <div class="section-header">
+            <h2 class="section-title">AI Configuration</h2>
+          </div>
+          <div class="admin-card" style="padding: 16px;">
+            <p style="margin-bottom: 12px; font-size: 14px; color: var(--text-secondary);">
+              To use the enhanced AI Estimated feature, please enter your Google Gemini API Key.
+            </p>
+            <div class="form-group">
+              <label class="form-label">Gemini API Key</label>
+              <input type="password" id="gemini-api-key" class="form-input" placeholder="Enter your API Key">
+            </div>
+            <button id="save-api-key" class="btn btn-primary btn-full">Save API Key</button>
+            <p id="api-key-status" style="margin-top: 8px; font-size: 12px; height: 16px;"></p>
+          </div>
+        </section>
+      </main>
+    </div>
     
     <!-- Side Menu -->
     <div id="side-menu" class="side-menu">
@@ -638,8 +672,12 @@
           <span class="menu-icon">🎯</span>
           <span class="menu-text">Goals</span>
         </a>
-        <a href="admin.html" class="menu-item">
+        <a href="#" class="menu-item" data-view="settings">
           <span class="menu-icon">⚙️</span>
+          <span class="menu-text">Settings</span>
+        </a>
+        <a href="admin.html" class="menu-item">
+          <span class="menu-icon">🔒</span>
           <span class="menu-text">Admin Panel</span>
         </a>
       </nav>

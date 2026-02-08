@@ -18,7 +18,8 @@ const AppState = {
   selectedBreads: new Map(),
   riceGrams: 250,
   onboardingStep: 1,
-  tempProfile: {}
+  tempProfile: {},
+  geminiApiKey: null
 };
 
 // ==================== TDEE CONSTANTS ====================
@@ -45,25 +46,27 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 async function initApp() {
   console.log('Initializing Campus Calories v2.0...');
-  
+
   try {
     await initDatabase();
     cacheDOMElements();
-    
+
     AppState.userProfile = await getUserProfile();
-    
+
     const hasCompleted = await hasCompletedOnboarding();
-    
+
     if (!hasCompleted || !AppState.userProfile) {
       showOnboarding();
     } else {
       showDashboard();
       await loadDailyLog();
+      // Load API Key
+      AppState.geminiApiKey = await getSetting('geminiApiKey');
     }
-    
+
     await initializeMessMenuData();
     setupEventListeners();
-    
+
     console.log('App initialized successfully');
   } catch (error) {
     console.error('App initialization failed:', error);
@@ -75,7 +78,7 @@ function cacheDOMElements() {
   // Screens
   DOM.onboardingScreen = document.getElementById('onboarding-screen');
   DOM.dashboardScreen = document.getElementById('dashboard-screen');
-  
+
   // Onboarding
   DOM.onboardingSteps = document.querySelectorAll('.onboarding-step');
   DOM.stepDots = document.querySelectorAll('.step-dot');
@@ -85,7 +88,7 @@ function cacheDOMElements() {
   DOM.calculatedProtein = document.getElementById('calculated-protein');
   DOM.toggleCustomGoals = document.getElementById('toggle-custom-goals');
   DOM.customGoalsInputs = document.getElementById('custom-goals-inputs');
-  
+
   // Dashboard
   DOM.caloriesRing = document.getElementById('calories-ring');
   DOM.proteinRing = document.getElementById('protein-ring');
@@ -99,7 +102,14 @@ function cacheDOMElements() {
   DOM.foodLog = document.getElementById('food-log');
   DOM.mealCount = document.getElementById('meal-count');
   DOM.currentDate = document.getElementById('current-date');
-  
+
+  // Settings
+  DOM.settingsScreen = document.getElementById('settings-screen');
+  DOM.settingsBackBtn = document.getElementById('settings-back-btn');
+  DOM.geminiApiKeyInput = document.getElementById('gemini-api-key');
+  DOM.saveApiKeyBtn = document.getElementById('save-api-key');
+  DOM.apiKeyStatus = document.getElementById('api-key-status');
+
   // Modal
   DOM.addMealModal = document.getElementById('add-meal-modal');
   DOM.categorySelection = document.getElementById('category-selection');
@@ -109,11 +119,11 @@ function cacheDOMElements() {
   DOM.packagedSelection = document.getElementById('packaged-selection');
   DOM.customSelection = document.getElementById('custom-selection');
   DOM.l4SelectionModal = document.getElementById('l4-selection-modal');
-  
+
   // Side Menu
   DOM.sideMenu = document.getElementById('side-menu');
   DOM.menuOverlay = document.getElementById('menu-overlay');
-  
+
   // Toast
   DOM.toastContainer = document.getElementById('toast-container');
 }
@@ -125,51 +135,61 @@ function setupEventListeners() {
   document.getElementById('menu-overlay')?.addEventListener('click', toggleSideMenu);
   document.getElementById('close-menu')?.addEventListener('click', toggleSideMenu);
   document.getElementById('date-picker-btn')?.addEventListener('click', showDatePicker);
-  
+
   // FAB
   document.getElementById('add-meal-fab')?.addEventListener('click', openAddMealModal);
-  
+
   // Modal close
   document.querySelectorAll('.modal-close, .modal-overlay').forEach(el => {
     el.addEventListener('click', closeAllModals);
   });
-  
+
   // Category selection
   document.querySelectorAll('.category-card').forEach(card => {
     card.addEventListener('click', () => selectCategory(card.dataset.category));
   });
-  
+
   // Back buttons
   document.querySelectorAll('.back-btn').forEach(btn => {
     btn.addEventListener('click', goBackToCategories);
   });
-  
+
   // Onboarding
   setupOnboardingListeners();
-  
+
   // Mess selection
   setupMessListeners();
-  
+
   // ANC selection
   setupAncListeners();
-  
+
   // Packaged food
   setupPackagedListeners();
-  
+
   // Custom entry
   setupCustomListeners();
-  
+
   // L4 selection
   setupL4Listeners();
-  
+
   // Plate view
   setupPlateListeners();
+
+  // Settings
+  setupSettingsListeners();
+
+  // Side Menu Items
+  setupSideMenuListeners();
 }
 
 // ==================== NAVIGATION ====================
 function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   document.getElementById(screenId)?.classList.remove('hidden');
+
+  // Close menu if open
+  DOM.sideMenu?.classList.remove('open');
+  DOM.menuOverlay?.classList.remove('visible');
 }
 
 function showOnboarding() {
@@ -193,7 +213,7 @@ function setupOnboardingListeners() {
       AppState.tempProfile.gender = btn.dataset.gender;
     });
   });
-  
+
   // Activity selection
   document.querySelectorAll('.activity-option').forEach(opt => {
     opt.addEventListener('click', () => {
@@ -202,7 +222,7 @@ function setupOnboardingListeners() {
       AppState.tempProfile.activity = opt.dataset.activity;
     });
   });
-  
+
   // Navigation
   DOM.onboardingPrev?.addEventListener('click', () => {
     if (AppState.onboardingStep > 1) {
@@ -210,7 +230,7 @@ function setupOnboardingListeners() {
       updateOnboardingUI();
     }
   });
-  
+
   DOM.onboardingNext?.addEventListener('click', () => {
     if (validateOnboardingStep()) {
       if (AppState.onboardingStep < 4) {
@@ -224,7 +244,7 @@ function setupOnboardingListeners() {
       }
     }
   });
-  
+
   // Toggle custom goals
   DOM.toggleCustomGoals?.addEventListener('click', () => {
     DOM.customGoalsInputs?.classList.toggle('hidden');
@@ -237,7 +257,7 @@ function validateOnboardingStep() {
       const age = document.getElementById('onboarding-age')?.value;
       const weight = document.getElementById('onboarding-weight')?.value;
       const height = document.getElementById('onboarding-height')?.value;
-      
+
       if (!AppState.tempProfile.gender) {
         showToast('Please select your gender', 'error');
         return false;
@@ -246,29 +266,29 @@ function validateOnboardingStep() {
         showToast('Please fill in all fields', 'error');
         return false;
       }
-      
+
       AppState.tempProfile.age = parseInt(age);
       AppState.tempProfile.weight = parseFloat(weight);
       AppState.tempProfile.height = parseInt(height);
       return true;
-      
+
     case 2:
       if (!AppState.tempProfile.activity) {
         showToast('Please select your activity level', 'error');
         return false;
       }
       return true;
-      
+
     case 3:
       const customCals = document.getElementById('custom-calories')?.value;
       const customProtein = document.getElementById('custom-protein')?.value;
-      
+
       if (!DOM.customGoalsInputs?.classList.contains('hidden')) {
         if (customCals) AppState.tempProfile.customCalories = parseInt(customCals);
         if (customProtein) AppState.tempProfile.customProtein = parseInt(customProtein);
       }
       return true;
-      
+
     default:
       return true;
   }
@@ -276,7 +296,7 @@ function validateOnboardingStep() {
 
 function calculateGoals() {
   const { gender, weight, height, age, activity } = AppState.tempProfile;
-  
+
   // BMR Calculation (Mifflin-St Jeor)
   let bmr;
   if (gender === 'male') {
@@ -284,18 +304,18 @@ function calculateGoals() {
   } else {
     bmr = (10 * weight) + (6.25 * height) - (5 * age) + TDEE_CONSTANTS.bmrFemaleMultiplier;
   }
-  
+
   // TDEE
   const tdee = Math.round(bmr * TDEE_CONSTANTS.activityMultipliers[activity]);
-  
+
   // Protein goal
   const proteinGoal = Math.round(weight * TDEE_CONSTANTS.proteinPerKg[activity]);
-  
+
   AppState.tempProfile.calculatedCalories = tdee;
   AppState.tempProfile.calculatedProtein = proteinGoal;
   AppState.tempProfile.dailyCalorieGoal = tdee;
   AppState.tempProfile.dailyProteinGoal = proteinGoal;
-  
+
   // Update UI
   if (DOM.calculatedCalories) {
     DOM.calculatedCalories.textContent = tdee.toLocaleString();
@@ -310,15 +330,15 @@ function updateOnboardingUI() {
   DOM.onboardingSteps.forEach((step, index) => {
     step.classList.toggle('active', index + 1 === AppState.onboardingStep);
   });
-  
+
   // Update dots
   DOM.stepDots.forEach((dot, index) => {
     dot.classList.toggle('active', index + 1 === AppState.onboardingStep);
   });
-  
+
   // Show/hide prev button
   DOM.onboardingPrev?.classList.toggle('hidden', AppState.onboardingStep === 1);
-  
+
   // Update next button text
   if (DOM.onboardingNext) {
     DOM.onboardingNext.textContent = AppState.onboardingStep === 4 ? 'Get Started' : 'Continue';
@@ -331,10 +351,10 @@ async function completeOnboardingFlow() {
     onboardingCompleted: true,
     onboardingCompletedAt: new Date().toISOString()
   };
-  
+
   await saveUserProfile(profile);
   AppState.userProfile = profile;
-  
+
   showDashboard();
   showToast('Welcome to Campus Calories!', 'success');
 }
@@ -351,7 +371,7 @@ function updateDashboardDate() {
 async function loadDailyLog() {
   const stats = await getFoodLogStats(AppState.selectedDate);
   AppState.dailyTotals = stats;
-  
+
   updateProgressRings();
   renderFoodLog();
 }
@@ -359,20 +379,20 @@ async function loadDailyLog() {
 function updateProgressRings() {
   const profile = AppState.userProfile;
   if (!profile) return;
-  
+
   const { calories, protein } = AppState.dailyTotals;
   const calorieGoal = profile.dailyCalorieGoal || 2400;
   const proteinGoal = profile.dailyProteinGoal || 120;
-  
+
   // Calculate remaining
   const remaining = Math.max(0, calorieGoal - calories);
   const overflow = calories > calorieGoal ? calories - calorieGoal : 0;
-  
+
   // Update center text
   if (DOM.remainingCalories) {
     DOM.remainingCalories.textContent = remaining.toLocaleString();
   }
-  
+
   // Show/hide overflow
   if (DOM.overflowIndicator) {
     DOM.overflowIndicator.classList.toggle('hidden', overflow === 0);
@@ -380,7 +400,7 @@ function updateProgressRings() {
       DOM.overflowIndicator.textContent = `+${overflow.toLocaleString()}`;
     }
   }
-  
+
   // Update stats
   if (DOM.consumedCalories) {
     DOM.consumedCalories.textContent = `${calories.toLocaleString()} kcal`;
@@ -391,34 +411,34 @@ function updateProgressRings() {
   if (DOM.proteinStats) {
     DOM.proteinStats.textContent = `${Math.round(protein)}g / ${proteinGoal}g`;
   }
-  
+
   // Update protein bar
   if (DOM.proteinBar) {
     const proteinPercent = Math.min((protein / proteinGoal) * 100, 100);
     DOM.proteinBar.style.width = `${proteinPercent}%`;
   }
-  
+
   // Update rings
   const calorieRadius = 120;
   const proteinRadius = 100;
   const calorieCircumference = 2 * Math.PI * calorieRadius;
   const proteinCircumference = 2 * Math.PI * proteinRadius;
-  
+
   // Calorie ring (capped at 100%)
   const caloriePercent = Math.min(calories / calorieGoal, 1);
   const calorieOffset = calorieCircumference - (calorieCircumference * caloriePercent);
-  
+
   // Protein ring
   const proteinPercent = Math.min(protein / proteinGoal, 1);
   const proteinOffset = proteinCircumference - (proteinCircumference * proteinPercent);
-  
+
   if (DOM.caloriesRing) {
     DOM.caloriesRing.style.strokeDashoffset = calorieOffset;
   }
   if (DOM.proteinRing) {
     DOM.proteinRing.style.strokeDashoffset = proteinOffset;
   }
-  
+
   // Show overflow ring if over limit
   if (DOM.overflowRing) {
     DOM.overflowRing.classList.toggle('hidden', calories <= calorieGoal);
@@ -427,9 +447,9 @@ function updateProgressRings() {
 
 function renderFoodLog() {
   if (!DOM.foodLog) return;
-  
+
   const entries = [];
-  
+
   // Get entries from database
   getFoodEntriesByDate(AppState.selectedDate).then(entries => {
     if (entries.length === 0) {
@@ -455,7 +475,7 @@ function renderFoodLog() {
         </div>
       `).join('');
     }
-    
+
     // Update meal count
     if (DOM.mealCount) {
       DOM.mealCount.textContent = `${entries.length} item${entries.length !== 1 ? 's' : ''}`;
@@ -504,14 +524,14 @@ function showCategorySelection() {
   DOM.ancSelection?.classList.add('hidden');
   DOM.packagedSelection?.classList.add('hidden');
   DOM.customSelection?.classList.add('hidden');
-  
+
   // Update mess status
   updateMessStatus();
 }
 
 function selectCategory(category) {
   DOM.categorySelection?.classList.add('hidden');
-  
+
   switch (category) {
     case 'mess':
       showMessSelection();
@@ -543,7 +563,7 @@ function setupMessListeners() {
       loadMessItems();
     });
   });
-  
+
   // Section tabs
   document.querySelectorAll('.section-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -553,7 +573,7 @@ function setupMessListeners() {
       loadMessItems();
     });
   });
-  
+
   // Add mess items button
   document.getElementById('add-mess-items')?.addEventListener('click', addMessItemsToLog);
 }
@@ -561,7 +581,7 @@ function setupMessListeners() {
 function updateMessStatus() {
   const isOpen = isMessOpen();
   const statusEl = document.getElementById('mess-status');
-  
+
   if (statusEl) {
     statusEl.textContent = isOpen ? 'Open' : 'Closed';
     statusEl.style.color = isOpen ? 'var(--color-success)' : 'var(--color-danger)';
@@ -570,15 +590,15 @@ function updateMessStatus() {
 
 function showMessSelection() {
   DOM.messSelection?.classList.remove('hidden');
-  
+
   const isOpen = isMessOpen();
   const currentMeal = getCurrentMealType() || 'breakfast';
-  
+
   // Update status banner
   const statusBanner = document.getElementById('mess-status-banner');
   const statusText = document.getElementById('mess-status-text');
   const statusTime = document.getElementById('mess-status-time');
-  
+
   if (statusBanner) {
     statusBanner.classList.toggle('closed', !isOpen);
     if (statusText) {
@@ -593,37 +613,37 @@ function showMessSelection() {
       statusTime.textContent = `${slot.label}: ${startH}:${startM.toString().padStart(2, '0')} - ${endH}:${endM.toString().padStart(2, '0')}`;
     }
   }
-  
+
   // Set active tab to current meal
   document.querySelectorAll('.meal-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.meal === currentMeal);
   });
   AppState.currentMealType = currentMeal;
   AppState.currentSectionFilter = 'all';
-  
+
   // Reset selections
   AppState.messSelections = new Map();
   updateSelectedSummary();
-  
+
   loadMessItems();
 }
 
 function loadMessItems() {
   const itemsList = document.getElementById('mess-items-list');
   if (!itemsList) return;
-  
+
   let items = getCurrentDayMenu(AppState.currentMealType);
-  
+
   // Filter by section if not 'all'
   if (AppState.currentSectionFilter && AppState.currentSectionFilter !== 'all') {
     items = items.filter(item => item.section === AppState.currentSectionFilter);
   }
-  
+
   itemsList.innerHTML = items.map((item, index) => {
     const nutrition = getItemNutrition(item);
     const selection = AppState.messSelections?.get(item.name);
     const quantity = selection?.quantity || 0;
-    
+
     // Get weight for display
     let weightDisplay = '';
     if (item.type === 'unit' && item.bread_key) {
@@ -638,7 +658,7 @@ function loadMessItems() {
     } else if (item.weight) {
       weightDisplay = `| ${item.weight}g`;
     }
-    
+
     return `
       <div class="mess-item-card ${quantity > 0 ? 'selected' : ''}" data-item='${JSON.stringify(item)}' data-index="${index}">
         <div class="mess-item-section">${item.section}</div>
@@ -654,7 +674,7 @@ function loadMessItems() {
       </div>
     `;
   }).join('');
-  
+
   // Add quantity button handlers
   itemsList.querySelectorAll('.qty-minus').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -662,7 +682,7 @@ function loadMessItems() {
       updateItemQuantity(btn.dataset.name, -1);
     });
   });
-  
+
   itemsList.querySelectorAll('.qty-plus').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -675,11 +695,11 @@ function updateItemQuantity(itemName, delta) {
   if (!AppState.messSelections) {
     AppState.messSelections = new Map();
   }
-  
+
   const current = AppState.messSelections.get(itemName);
   const currentQty = current?.quantity || 0;
   const newQty = Math.max(0, Math.min(currentQty + delta, 5)); // Max 5 items
-  
+
   if (newQty === 0) {
     AppState.messSelections.delete(itemName);
   } else {
@@ -690,25 +710,25 @@ function updateItemQuantity(itemName, delta) {
       AppState.messSelections.set(itemName, { ...item, quantity: newQty });
     }
   }
-  
+
   // Update UI
   const qtyDisplay = document.getElementById(`qty-${itemName}`);
   if (qtyDisplay) {
     qtyDisplay.textContent = newQty;
   }
-  
+
   // Update card selection state
   const card = qtyDisplay?.closest('.mess-item-card');
   if (card) {
     card.classList.toggle('selected', newQty > 0);
   }
-  
+
   // Update minus button state
   const minusBtn = card?.querySelector('.qty-minus');
   if (minusBtn) {
     minusBtn.disabled = newQty <= 0;
   }
-  
+
   updateSelectedSummary();
 }
 
@@ -716,17 +736,17 @@ function updateSelectedSummary() {
   const selections = AppState.messSelections || new Map();
   const count = selections.size;
   let totalCalories = 0;
-  
+
   selections.forEach((item) => {
     const nutrition = getItemNutrition(item);
     totalCalories += nutrition.calories * item.quantity;
   });
-  
+
   const summary = document.getElementById('selected-items-summary');
   const countEl = document.getElementById('selected-count');
   const calsEl = document.getElementById('selected-calories');
   const addBtn = document.getElementById('add-mess-items');
-  
+
   if (summary) {
     summary.classList.toggle('hidden', count === 0);
   }
@@ -746,12 +766,12 @@ function updateSelectedSummary() {
 async function addMessItemsToLog() {
   const selections = AppState.messSelections || new Map();
   let addedCount = 0;
-  
+
   for (const [name, item] of selections) {
     const nutrition = getItemNutrition(item);
     const totalCalories = nutrition.calories * item.quantity;
     const totalProtein = nutrition.protein * item.quantity;
-    
+
     await addFoodEntry({
       name: `${item.name} (${item.quantity})`,
       category: 'mess',
@@ -765,7 +785,7 @@ async function addMessItemsToLog() {
     });
     addedCount += item.quantity;
   }
-  
+
   showToast(`Added ${addedCount} item(s) to log`, 'success');
   closeAllModals();
   await loadDailyLog();
@@ -805,13 +825,13 @@ function getItemNutrition(item) {
 function toggleItemSelection(card) {
   card.classList.toggle('selected');
   const item = JSON.parse(card.dataset.item);
-  
+
   if (card.classList.contains('selected')) {
     AppState.selectedItems.set(item.name, item);
   } else {
     AppState.selectedItems.delete(item.name);
   }
-  
+
   // Show add button if items selected
   const addBtn = document.getElementById('add-mess-items');
   if (addBtn) {
@@ -825,7 +845,7 @@ function setupPlateListeners() {
   document.querySelectorAll('.plate-section').forEach(section => {
     section.addEventListener('click', () => selectPlateSection(section.dataset.section));
   });
-  
+
   // Add plate items
   document.getElementById('add-plate-items')?.addEventListener('click', addPlateItemsToLog);
 }
@@ -833,20 +853,20 @@ function setupPlateListeners() {
 function showPlateView() {
   DOM.messSelection?.classList.add('hidden');
   DOM.plateView?.classList.remove('hidden');
-  
+
   // Load items for each section
   loadPlateSectionItems();
 }
 
 function loadPlateSectionItems() {
   const items = getCurrentDayMenu(AppState.currentMealType);
-  
+
   // Clear sections
   ['l1-items', 'l2-items', 'l3-items', 'l4-items'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = '';
   });
-  
+
   // Distribute items to sections
   items.forEach(item => {
     const sectionId = {
@@ -855,7 +875,7 @@ function loadPlateSectionItems() {
       'L3': 'l3-items',
       'L4': 'l4-items'
     }[item.section];
-    
+
     if (sectionId) {
       const el = document.getElementById(sectionId);
       if (el) {
@@ -874,18 +894,18 @@ function selectPlateSection(section) {
     showL4SelectionModal();
     return;
   }
-  
+
   // For other sections, show item selection
   const items = getCurrentDayMenu(AppState.currentMealType).filter(i => i.section === section);
-  
+
   const detailsPanel = document.getElementById('plate-selection-details');
   const itemsList = document.getElementById('section-items-list');
   const title = document.getElementById('selected-section-title');
-  
+
   if (title) {
     title.textContent = `${section} - ${PLATE_SECTIONS[section].name}`;
   }
-  
+
   if (itemsList) {
     itemsList.innerHTML = items.map(item => `
       <div class="section-item-row" data-item='${JSON.stringify(item)}'>
@@ -897,14 +917,14 @@ function selectPlateSection(section) {
       </div>
     `).join('');
   }
-  
+
   detailsPanel?.classList.remove('hidden');
 }
 
 function addPlateItem(section, itemName) {
   const items = getCurrentDayMenu(AppState.currentMealType);
   const item = items.find(i => i.name === itemName);
-  
+
   if (item) {
     AppState.plateSelections[section].push(item);
     updatePlateSectionUI(section);
@@ -929,7 +949,7 @@ function updateAddPlateButton() {
 
 async function addPlateItemsToLog() {
   const allItems = Object.values(AppState.plateSelections).flat();
-  
+
   for (const item of allItems) {
     const nutrition = getItemNutrition(item);
     await addFoodEntry({
@@ -944,7 +964,7 @@ async function addPlateItemsToLog() {
       timestamp: Date.now()
     });
   }
-  
+
   showToast(`Added ${allItems.length} items to log`, 'success');
   closeAllModals();
   await loadDailyLog();
@@ -958,12 +978,12 @@ function setupL4Listeners() {
       document.querySelectorAll('.l4-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       AppState.currentL4Tab = tab.dataset.tab;
-      
+
       document.getElementById('l4-rice-panel')?.classList.toggle('hidden', tab.dataset.tab !== 'rice');
       document.getElementById('l4-bread-panel')?.classList.toggle('hidden', tab.dataset.tab !== 'bread');
     });
   });
-  
+
   // Rice options
   document.querySelectorAll('.rice-option').forEach(opt => {
     opt.addEventListener('click', () => {
@@ -972,14 +992,14 @@ function setupL4Listeners() {
       AppState.selectedRice = opt.dataset.rice;
     });
   });
-  
+
   // Rice slider
   const riceSlider = document.getElementById('rice-slider');
   riceSlider?.addEventListener('input', (e) => {
     AppState.riceGrams = parseInt(e.target.value);
     document.getElementById('rice-grams').textContent = AppState.riceGrams;
   });
-  
+
   // Slider presets
   document.querySelectorAll('.slider-presets button').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -991,15 +1011,15 @@ function setupL4Listeners() {
       document.getElementById('rice-grams').textContent = grams;
     });
   });
-  
+
   // Add L4 items
   document.getElementById('add-l4-items')?.addEventListener('click', addL4Items);
-  
+
   // Close L4 modal
   document.querySelector('.subl-modal-close')?.addEventListener('click', () => {
     DOM.l4SelectionModal?.classList.add('hidden');
   });
-  
+
   // Load bread options
   loadBreadOptions();
 }
@@ -1007,7 +1027,7 @@ function setupL4Listeners() {
 function loadBreadOptions() {
   const container = document.getElementById('bread-options');
   if (!container) return;
-  
+
   container.innerHTML = Object.entries(BREAD_UNITS).map(([key, bread]) => `
     <div class="bread-option" data-bread="${key}">
       <span class="bread-icon">${bread.icon}</span>
@@ -1020,7 +1040,7 @@ function loadBreadOptions() {
       </div>
     </div>
   `).join('');
-  
+
   // Add quantity handlers
   container.querySelectorAll('.qty-minus').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -1028,7 +1048,7 @@ function loadBreadOptions() {
       updateBreadQuantity(btn.dataset.bread, -1);
     });
   });
-  
+
   container.querySelectorAll('.qty-plus').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1041,18 +1061,18 @@ function updateBreadQuantity(breadKey, delta) {
   const current = AppState.selectedBreads.get(breadKey) || 0;
   const bread = BREAD_UNITS[breadKey];
   const newQty = Math.max(0, Math.min(current + delta, bread.max));
-  
+
   if (newQty === 0) {
     AppState.selectedBreads.delete(breadKey);
   } else {
     AppState.selectedBreads.set(breadKey, newQty);
   }
-  
+
   const qtyEl = document.getElementById(`qty-${breadKey}`);
   if (qtyEl) {
     qtyEl.textContent = newQty;
   }
-  
+
   const option = document.querySelector(`.bread-option[data-bread="${breadKey}"]`);
   if (option) {
     option.classList.toggle('selected', newQty > 0);
@@ -1065,7 +1085,7 @@ function showL4SelectionModal() {
 
 async function addL4Items() {
   const items = [];
-  
+
   // Add rice if selected
   if (AppState.selectedRice) {
     const rice = RICE_DATA[AppState.selectedRice];
@@ -1079,7 +1099,7 @@ async function addL4Items() {
       timestamp: Date.now()
     });
   }
-  
+
   // Add breads
   AppState.selectedBreads.forEach((qty, breadKey) => {
     const nutrition = calculateBreadNutrition(breadKey, qty);
@@ -1092,12 +1112,12 @@ async function addL4Items() {
       timestamp: Date.now()
     });
   });
-  
+
   // Save to log
   for (const item of items) {
     await addFoodEntry(item);
   }
-  
+
   if (items.length > 0) {
     showToast(`Added ${items.length} item(s) to log`, 'success');
     DOM.l4SelectionModal?.classList.add('hidden');
@@ -1121,7 +1141,7 @@ function showAncSelection() {
 function showAncCategories() {
   const container = document.getElementById('anc-categories');
   const itemsContainer = document.getElementById('anc-items');
-  
+
   if (container) {
     container.innerHTML = getAllAncCategories().map(key => {
       const info = getAncCategoryInfo(key);
@@ -1132,27 +1152,27 @@ function showAncCategories() {
         </div>
       `;
     }).join('');
-    
+
     container.querySelectorAll('.anc-category-card').forEach(card => {
       card.addEventListener('click', () => selectAncCategory(card.dataset.category));
     });
   }
-  
+
   container?.classList.remove('hidden');
   itemsContainer?.classList.add('hidden');
 }
 
 function selectAncCategory(category) {
   AppState.currentAncCategory = category;
-  
+
   const container = document.getElementById('anc-categories');
   const itemsContainer = document.getElementById('anc-items');
   const title = document.getElementById('anc-category-title');
   const itemsList = document.getElementById('anc-items-list');
-  
+
   const info = getAncCategoryInfo(category);
   if (title) title.textContent = info.name;
-  
+
   const items = getAncItems(category);
   if (itemsList) {
     itemsList.innerHTML = items.map(item => `
@@ -1165,12 +1185,12 @@ function selectAncCategory(category) {
         <div class="item-checkbox"></div>
       </div>
     `).join('');
-    
+
     itemsList.querySelectorAll('.item-card').forEach(card => {
       card.addEventListener('click', () => toggleAncItem(card));
     });
   }
-  
+
   container?.classList.add('hidden');
   itemsContainer?.classList.remove('hidden');
 }
@@ -1178,7 +1198,7 @@ function selectAncCategory(category) {
 function toggleAncItem(card) {
   card.classList.toggle('selected');
   const item = JSON.parse(card.dataset.item);
-  
+
   if (card.classList.contains('selected')) {
     addAncItemToLog(item);
   }
@@ -1197,7 +1217,7 @@ async function addAncItemToLog(item) {
     price: item.price,
     timestamp: Date.now()
   });
-  
+
   showToast(`${item.name} (${item.weight}g) added to log`, 'success');
   await loadDailyLog();
 }
@@ -1206,16 +1226,16 @@ async function addAncItemToLog(item) {
 function setupPackagedListeners() {
   const searchBtn = document.getElementById('search-btn');
   const searchInput = document.getElementById('packaged-search');
-  
+
   searchBtn?.addEventListener('click', () => searchPackagedFood());
   searchInput?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') searchPackagedFood();
   });
-  
+
   // Portion slider
   const portionSlider = document.getElementById('portion-slider');
   portionSlider?.addEventListener('input', updatePortionPreview);
-  
+
   // Add portion
   document.getElementById('add-portion')?.addEventListener('click', addPortionToLog);
 }
@@ -1227,28 +1247,28 @@ function showPackagedSelection() {
 async function searchPackagedFood() {
   const query = document.getElementById('packaged-search')?.value.trim();
   if (!query) return;
-  
+
   const resultsContainer = document.getElementById('search-results');
   if (resultsContainer) {
     resultsContainer.innerHTML = '<p style="text-align:center;padding:20px;">Searching...</p>';
   }
-  
+
   try {
     // Check cache first
     const cached = await searchCachedProducts(query);
-    
+
     if (cached.length > 0) {
       renderPackagedResults(cached);
       return;
     }
-    
+
     // Fetch from API
     const response = await fetch(
       `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&json=1&page_size=10&countries_tags_en=india`
     );
-    
+
     const data = await response.json();
-    
+
     if (data.products && data.products.length > 0) {
       // Cache results
       for (const product of data.products) {
@@ -1263,7 +1283,7 @@ async function searchPackagedFood() {
           fat: product.nutriments?.fat_100g || 0
         });
       }
-      
+
       renderPackagedResults(data.products);
     } else {
       resultsContainer.innerHTML = '<p style="text-align:center;padding:20px;">No products found</p>';
@@ -1277,19 +1297,19 @@ async function searchPackagedFood() {
 function renderPackagedResults(products) {
   const container = document.getElementById('search-results');
   if (!container) return;
-  
+
   container.innerHTML = products.map(p => {
     const calories = p.calories || p.nutriments?.['energy-kcal_100g'] || 0;
     const protein = p.protein || p.nutriments?.proteins_100g || 0;
-    
+
     return `
       <div class="product-card" data-product='${JSON.stringify({
-        name: p.name || p.product_name,
-        calories,
-        protein,
-        carbs: p.carbs || p.nutriments?.carbohydrates_100g || 0,
-        fat: p.fat || p.nutriments?.fat_100g || 0
-      })}'>
+      name: p.name || p.product_name,
+      calories,
+      protein,
+      carbs: p.carbs || p.nutriments?.carbohydrates_100g || 0,
+      fat: p.fat || p.nutriments?.fat_100g || 0
+    })}'>
         <img src="${p.image || p.image_url || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'}" 
              alt="" class="product-image" loading="lazy">
         <div class="product-info">
@@ -1303,7 +1323,7 @@ function renderPackagedResults(products) {
       </div>
     `;
   }).join('');
-  
+
   container.querySelectorAll('.product-card').forEach(card => {
     card.addEventListener('click', () => showPortionModal(card.dataset.product));
   });
@@ -1312,10 +1332,10 @@ function renderPackagedResults(products) {
 function showPortionModal(productJson) {
   const product = JSON.parse(productJson);
   AppState.currentPackagedProduct = product;
-  
+
   document.getElementById('portion-product-name').textContent = product.name;
   document.getElementById('portion-per-100g').textContent = `${Math.round(product.calories)} kcal / 100g`;
-  
+
   document.getElementById('portion-modal')?.classList.remove('hidden');
   updatePortionPreview();
 }
@@ -1323,15 +1343,15 @@ function showPortionModal(productJson) {
 function updatePortionPreview() {
   const slider = document.getElementById('portion-slider');
   const grams = parseInt(slider?.value || 100);
-  
+
   document.getElementById('portion-grams').textContent = grams;
-  
+
   const product = AppState.currentPackagedProduct;
   if (product) {
     const factor = grams / 100;
     const calories = Math.round(product.calories * factor);
     const protein = Math.round(product.protein * factor * 10) / 10;
-    
+
     document.getElementById('portion-calories').textContent = `${calories} kcal`;
     document.getElementById('portion-protein').textContent = `${protein}g protein`;
   }
@@ -1340,10 +1360,10 @@ function updatePortionPreview() {
 async function addPortionToLog() {
   const product = AppState.currentPackagedProduct;
   if (!product) return;
-  
+
   const grams = parseInt(document.getElementById('portion-slider')?.value || 100);
   const factor = grams / 100;
-  
+
   await addFoodEntry({
     name: product.name,
     category: 'packaged',
@@ -1355,7 +1375,7 @@ async function addPortionToLog() {
     portion: `${grams}g`,
     timestamp: Date.now()
   });
-  
+
   showToast(`${product.name} added to log`, 'success');
   document.getElementById('portion-modal')?.classList.add('hidden');
   await loadDailyLog();
@@ -1364,7 +1384,7 @@ async function addPortionToLog() {
 // ==================== CUSTOM ENTRY ====================
 function setupCustomListeners() {
   document.getElementById('add-custom-item')?.addEventListener('click', addCustomItem);
-  
+
   // AI meal description listeners
   document.getElementById('ai-estimate-btn')?.addEventListener('click', estimateMealCalories);
   document.getElementById('ai-add-to-log')?.addEventListener('click', addAIEstimateToLog);
@@ -1387,13 +1407,13 @@ const AI_FOOD_DATABASE = {
   'dosa': { calories: 85, protein: 2, carbs: 16, fat: 1, weight: 80 },
   'idli': { calories: 39, protein: 1.6, carbs: 8, fat: 0.2, weight: 40 },
   'poori': { calories: 80, protein: 1.5, carbs: 10, fat: 4, weight: 25 },
-  
+
   // Rice Items
   'rice': { calories: 130, protein: 2.7, carbs: 28, fat: 0.3, weight: 100 },
   'fried rice': { calories: 180, protein: 4.2, carbs: 28, fat: 6.5, weight: 100 },
   'biryani': { calories: 160, protein: 4.5, carbs: 26, fat: 5, weight: 100 },
   'pulao': { calories: 135, protein: 3, carbs: 25, fat: 3, weight: 100 },
-  
+
   // Dal & Curries
   'dal': { calories: 116, protein: 7, carbs: 18, fat: 2.5, weight: 100 },
   'sambar': { calories: 65, protein: 3.5, carbs: 10, fat: 1.5, weight: 100 },
@@ -1401,39 +1421,39 @@ const AI_FOOD_DATABASE = {
   'chole': { calories: 140, protein: 8.9, carbs: 19, fat: 4, weight: 100 },
   'rajma': { calories: 127, protein: 8.7, carbs: 17, fat: 3.5, weight: 100 },
   'paneer': { calories: 265, protein: 18, carbs: 6, fat: 20, weight: 100 },
-  
+
   // Eggs
   'egg': { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, weight: 50 },
   'omelette': { calories: 165, protein: 11, carbs: 2, fat: 12, weight: 100 },
   'boiled egg': { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, weight: 50 },
-  
+
   // Chicken
   'chicken': { calories: 165, protein: 31, carbs: 0, fat: 3.6, weight: 100 },
   'grilled chicken': { calories: 165, protein: 31, carbs: 0, fat: 3.6, weight: 100 },
   'chicken curry': { calories: 180, protein: 20, carbs: 5, fat: 9, weight: 100 },
   'butter chicken': { calories: 250, protein: 18, carbs: 8, fat: 16, weight: 100 },
-  
+
   // Vegetables
   'vegetable': { calories: 95, protein: 3, carbs: 12, fat: 4, weight: 100 },
   'salad': { calories: 25, protein: 1, carbs: 5, fat: 0.2, weight: 50 },
-  
+
   // Snacks
   'samosa': { calories: 150, protein: 3.5, carbs: 18, fat: 7.5, weight: 50 },
   'pakora': { calories: 145, protein: 3, carbs: 16, fat: 8, weight: 80 },
-  
+
   // Western Foods
   'sandwich': { calories: 250, protein: 12, carbs: 28, fat: 10, weight: 150 },
   'burger': { calories: 295, protein: 17, carbs: 30, fat: 14, weight: 200 },
   'pizza': { calories: 266, protein: 11, carbs: 33, fat: 10, weight: 100 },
   'fries': { calories: 312, protein: 3.4, carbs: 41, fat: 15, weight: 100 },
   'pasta': { calories: 220, protein: 8, carbs: 28, fat: 9, weight: 200 },
-  
+
   // Beverages
   'tea': { calories: 70, protein: 2, carbs: 10, fat: 2, weight: 150 },
   'coffee': { calories: 60, protein: 2, carbs: 8, fat: 2, weight: 150 },
   'milk': { calories: 100, protein: 4.3, carbs: 5, fat: 6.5, weight: 100 },
   'juice': { calories: 45, protein: 0.5, carbs: 11, fat: 0, weight: 100 },
-  
+
   // Sweets
   'kheer': { calories: 165, protein: 5, carbs: 25, fat: 5.5, weight: 100 },
   'halwa': { calories: 200, protein: 3, carbs: 28, fat: 9, weight: 80 },
@@ -1441,27 +1461,134 @@ const AI_FOOD_DATABASE = {
   'ice cream': { calories: 200, protein: 3, carbs: 24, fat: 10, weight: 100 }
 };
 
+// ==================== SETTINGS ====================
+function setupSettingsListeners() {
+  DOM.saveApiKeyBtn?.addEventListener('click', saveGeminiApiKey);
+
+  // Back button
+  DOM.settingsBackBtn?.addEventListener('click', () => {
+    // If navigating back from settings, go to dashboard
+    showDashboard();
+  });
+
+  // Check saved key on load
+  if (DOM.geminiApiKeyInput && AppState.geminiApiKey) {
+    DOM.geminiApiKeyInput.value = AppState.geminiApiKey;
+  }
+}
+
+async function saveGeminiApiKey() {
+  const key = DOM.geminiApiKeyInput?.value.trim();
+  if (!key) {
+    showToast('Please enter an API Key', 'error');
+    return;
+  }
+
+  try {
+    await setSetting('geminiApiKey', key);
+    AppState.geminiApiKey = key;
+
+    if (DOM.apiKeyStatus) {
+      DOM.apiKeyStatus.textContent = 'API Key saved successfully!';
+      DOM.apiKeyStatus.style.color = 'var(--color-success)';
+      setTimeout(() => DOM.apiKeyStatus.textContent = '', 3000);
+    }
+  } catch (error) {
+    console.error('Failed to save API Key:', error);
+    showToast('Failed to save API Key', 'error');
+  }
+}
+
 // AI Calorie Estimation Function
-function estimateMealCalories() {
-  const description = document.getElementById('ai-meal-description')?.value.trim().toLowerCase();
+async function estimateMealCalories() {
+  const description = document.getElementById('ai-meal-description')?.value.trim();
   if (!description) {
     showToast('Please describe your meal', 'error');
     return;
   }
-  
-  // Parse the description
-  const result = parseMealDescription(description);
-  
+
+  // Check for API Key
+  if (!AppState.geminiApiKey) {
+    // Check local keyword fallback first? No, let's prompt for key or use basic local
+    // For now, let's try to prompt the user to go to settings
+    if (confirm('Gemini API Key is missing. Would you like to add it in Settings for better accuracy?')) {
+      showSettings();
+      closeAllModals();
+      return;
+    }
+    // Fallback to local
+    const result = parseMealDescription(description);
+    displayAIResult(result, description);
+    return;
+  }
+
+  const btn = document.getElementById('ai-estimate-btn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<span class="ai-btn-text">Estimating...</span>';
+  btn.disabled = true;
+
+  try {
+    const result = await callGeminiAPI(description);
+    displayAIResult(result, description);
+  } catch (error) {
+    console.error('AI Estimation failed:', error);
+    showToast('AI estimation failed. Using basic local estimator.', 'error');
+    // Fallback
+    const result = parseMealDescription(description);
+    displayAIResult(result, description);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+function showSettings() {
+  showScreen('settings-screen');
+}
+
+async function callGeminiAPI(description) {
+  const API_KEY = AppState.geminiApiKey;
+  const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+  const prompt = `
+    Analyze the following meal description and provide nutritional information (calories, protein in grams, carbs in grams, fat in grams).
+    Return ONLY a valid JSON object with keys: "calories", "protein", "carbs", "fat".
+    Do not wrap in markdown code blocks.
+    
+    Meal: "${description}"
+  `;
+
+  const response = await fetch(URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{ text: prompt }]
+      }]
+    })
+  });
+
+  if (!response.ok) throw new Error('Gemini API request failed');
+
+  const data = await response.json();
+  const text = data.candidates[0].content.parts[0].text;
+
+  // Clean potential markdown
+  const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  return JSON.parse(cleanText);
+}
+
+function displayAIResult(result, description) {
   // Display results
-  document.getElementById('ai-calories').textContent = result.calories;
-  document.getElementById('ai-protein').textContent = result.protein + 'g';
-  document.getElementById('ai-carbs').textContent = result.carbs + 'g';
-  document.getElementById('ai-fat').textContent = result.fat + 'g';
-  
+  document.getElementById('ai-calories').textContent = Math.round(result.calories);
+  document.getElementById('ai-protein').textContent = Math.round(result.protein) + 'g';
+  document.getElementById('ai-carbs').textContent = Math.round(result.carbs) + 'g';
+  document.getElementById('ai-fat').textContent = Math.round(result.fat) + 'g';
+
   // Store for adding to log
   AppState.aiEstimate = result;
-  AppState.aiEstimate.name = description.substring(0, 50) + (description.length > 50 ? '...' : '');
-  
+  AppState.aiEstimate.name = description.substring(0, 50) + (description.length > 50 ? '...' : '') + ' (AI)';
+
   document.getElementById('ai-result')?.classList.remove('hidden');
 }
 
@@ -1470,13 +1597,13 @@ function parseMealDescription(description) {
   let totalProtein = 0;
   let totalCarbs = 0;
   let totalFat = 0;
-  
+
   // Extract quantities and food items
   const words = description.split(/\s+/);
-  
+
   for (let i = 0; i < words.length; i++) {
     const word = words[i];
-    
+
     // Check for numbers (quantities)
     const quantity = parseInt(word);
     if (!isNaN(quantity) && quantity > 0 && quantity < 20) {
@@ -1484,7 +1611,7 @@ function parseMealDescription(description) {
       for (let j = i + 1; j < Math.min(i + 4, words.length); j++) {
         const foodName = words.slice(i + 1, j + 1).join(' ');
         const foodData = findFoodInDatabase(foodName);
-        
+
         if (foodData) {
           totalCalories += foodData.calories * quantity;
           totalProtein += foodData.protein * quantity;
@@ -1504,7 +1631,7 @@ function parseMealDescription(description) {
       }
     }
   }
-  
+
   // If no food found, provide a generic estimate
   if (totalCalories === 0) {
     // Generic meal estimate based on description length as a proxy
@@ -1513,7 +1640,7 @@ function parseMealDescription(description) {
     totalCarbs = 50;
     totalFat = 15;
   }
-  
+
   return {
     calories: Math.round(totalCalories),
     protein: Math.round(totalProtein * 10) / 10,
@@ -1527,14 +1654,14 @@ function findFoodInDatabase(foodName) {
   if (AI_FOOD_DATABASE[foodName]) {
     return AI_FOOD_DATABASE[foodName];
   }
-  
+
   // Partial match
   for (const [key, value] of Object.entries(AI_FOOD_DATABASE)) {
     if (foodName.includes(key) || key.includes(foodName)) {
       return value;
     }
   }
-  
+
   return null;
 }
 
@@ -1543,7 +1670,7 @@ async function addAIEstimateToLog() {
     showToast('Please estimate calories first', 'error');
     return;
   }
-  
+
   await addFoodEntry({
     name: AppState.aiEstimate.name,
     category: 'custom',
@@ -1555,7 +1682,7 @@ async function addAIEstimateToLog() {
     portion: 'AI Estimated',
     timestamp: Date.now()
   });
-  
+
   showToast('AI estimated meal added to log', 'success');
   document.getElementById('ai-result')?.classList.add('hidden');
   document.getElementById('ai-meal-description').value = '';
@@ -1568,17 +1695,17 @@ async function addCustomItem() {
   const protein = parseFloat(document.getElementById('custom-protein-input')?.value) || 0;
   const carbs = parseFloat(document.getElementById('custom-carbs-input')?.value) || 0;
   const fat = parseFloat(document.getElementById('custom-fat-input')?.value) || 0;
-  
+
   if (!name) {
     showToast('Please enter a food name', 'error');
     return;
   }
-  
+
   if (calories === 0) {
     showToast('Please enter calories', 'error');
     return;
   }
-  
+
   await addFoodEntry({
     name,
     category: 'custom',
@@ -1590,13 +1717,39 @@ async function addCustomItem() {
     portion: '1 serving',
     timestamp: Date.now()
   });
-  
+
   showToast(`${name} added to log`, 'success');
   closeAllModals();
   await loadDailyLog();
 }
 
 // ==================== SIDE MENU ====================
+function setupSideMenuListeners() {
+  // Side Menu Click Handler
+  document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      const view = item.dataset.view;
+
+      // Allow default link behavior if no data-view (e.g. admin.html)
+      if (!view) return;
+
+      e.preventDefault();
+
+      if (view === 'settings') {
+        showSettings();
+      } else if (view === 'dashboard') {
+        showDashboard();
+      } else {
+        // Placeholder for history/goals
+        console.log('Navigate to', view);
+        showToast(`${view.charAt(0).toUpperCase() + view.slice(1)} coming soon!`);
+      }
+
+      toggleSideMenu(); // Close menu
+    });
+  });
+}
+
 function toggleSideMenu() {
   DOM.sideMenu?.classList.toggle('active');
   DOM.menuOverlay?.classList.toggle('active');
@@ -1613,20 +1766,20 @@ function showDatePicker() {
   input.style.left = '50%';
   input.style.transform = 'translate(-50%, -50%)';
   input.style.zIndex = '9999';
-  
+
   input.addEventListener('change', async (e) => {
     AppState.selectedDate = e.target.value;
     updateDashboardDate();
     await loadDailyLog();
     document.body.removeChild(input);
   });
-  
+
   input.addEventListener('blur', () => {
     if (input.parentNode) {
       document.body.removeChild(input);
     }
   });
-  
+
   document.body.appendChild(input);
   input.click();
 }
@@ -1636,9 +1789,9 @@ function showToast(message, type = 'info') {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.textContent = message;
-  
+
   DOM.toastContainer?.appendChild(toast);
-  
+
   setTimeout(() => {
     toast.remove();
   }, 3000);
