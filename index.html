@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0066EE">
+  <meta name="description" content="Campus Calories - Track your nutrition accurately">
+  <title>Campus Calories</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Icons -->
+  <link rel="apple-touch-icon" href="images/icon-192x192.png">
+  
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/mess-plate.css">
+  <link rel="stylesheet" href="css/onboarding.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <!-- App Container -->
+  <div id="app">
+    
+    <!-- Onboarding Screen -->
+    <div id="onboarding-screen" class="screen">
+      <div class="onboarding-container">
+        <div class="onboarding-header">
+          <div class="onboarding-logo">Campus Calories</div>
+          <p class="onboarding-subtitle">Your personal nutrition tracker</p>
+        </div>
+        
+        <div id="onboarding-step-1" class="onboarding-step active">
+          <div class="step-indicator">
+            <span class="step-dot active"></span>
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
+          </div>
+          <h2 class="step-title">Basic Information</h2>
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <div class="gender-options">
+              <button class="gender-btn" data-gender="male">
+                <span class="gender-icon">♂</span>
+                <span>Male</span>
+              </button>
+              <button class="gender-btn" data-gender="female">
+                <span class="gender-icon">♀</span>
+                <span>Female</span>
+              </button>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Age (years)</label>
+              <input type="number" id="onboarding-age" class="form-input" placeholder="20" min="13" max="80">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Weight (kg)</label>
+              <input type="number" id="onboarding-weight" class="form-input" placeholder="70" min="30" max="200" step="0.1">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Height (cm)</label>
+            <input type="number" id="onboarding-height" class="form-input" placeholder="175" min="100" max="250">
+          </div>
+        </div>
+        
+        <div id="onboarding-step-2" class="onboarding-step">
+          <div class="step-indicator">
+            <span class="step-dot"></span>
+            <span class="step-dot active"></span>
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
+          </div>
+          <h2 class="step-title">Activity Level</h2>
+          <div class="activity-options">
+            <button class="activity-option" data-activity="lite">
+              <div class="activity-icon">🪑</div>
+              <div class="activity-info">
+                <div class="activity-name">Lite</div>
+                <div class="activity-desc">Sedentary, desk job, minimal exercise</div>
+              </div>
+            </button>
+            <button class="activity-option" data-activity="moderate">
+              <div class="activity-icon">🚶</div>
+              <div class="activity-info">
+                <div class="activity-name">Moderate</div>
+                <div class="activity-desc">Light activity, walking, occasional sports</div>
+              </div>
+            </button>
+            <button class="activity-option" data-activity="pro">
+              <div class="activity-icon">🏃</div>
+              <div class="activity-info">
+                <div class="activity-name">Pro</div>
+                <div class="activity-desc">Active lifestyle, regular exercise, sports</div>
+              </div>
+            </button>
+          </div>
+        </div>
+        
+        <div id="onboarding-step-3" class="onboarding-step">
+          <div class="step-indicator">
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
+            <span class="step-dot active"></span>
+            <span class="step-dot"></span>
+          </div>
+          <h2 class="step-title">Your Goals</h2>
+          <div class="goal-display-card">
+            <div class="goal-item">
+              <span class="goal-label">Daily Calories</span>
+              <span id="calculated-calories" class="goal-value">2,400</span>
+              <span class="goal-unit">kcal</span>
+            </div>
+            <div class="goal-item">
+              <span class="goal-label">Daily Protein</span>
+              <span id="calculated-protein" class="goal-value">120</span>
+              <span class="goal-unit">g</span>
+            </div>
+          </div>
+          <p class="goal-note">Based on your TDEE calculation</p>
+          <div class="custom-goal-toggle">
+            <button id="toggle-custom-goals" class="text-link">Set custom goals</button>
+          </div>
+          <div id="custom-goals-inputs" class="custom-goals-form hidden">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Calories</label>
+                <input type="number" id="custom-calories" class="form-input" placeholder="2400">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Protein (g)</label>
+                <input type="number" id="custom-protein" class="form-input" placeholder="120">
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div id="onboarding-step-4" class="onboarding-step">
+          <div class="step-indicator">
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
+            <span class="step-dot active"></span>
+          </div>
+          <h2 class="step-title">You're All Set!</h2>
+          <div class="success-illustration">
+            <div class="success-ring">
+              <span class="success-check">✓</span>
+            </div>
+          </div>
+          <p class="success-text">Start tracking your nutrition accurately with Campus Calories.</p>
+        </div>
+        
+        <div class="onboarding-nav">
+          <button id="onboarding-prev" class="btn btn-secondary hidden">Back</button>
+          <button id="onboarding-next" class="btn btn-primary">Continue</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Dashboard Screen -->
+    <div id="dashboard-screen" class="screen hidden">
+      <!-- Header -->
+      <header class="app-header">
+        <button id="menu-btn" class="icon-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+        <div class="header-logo">
+          <span class="logo-text">Campus Calories</span>
+        </div>
+        <button id="date-picker-btn" class="icon-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </button>
+      </header>
+      <!-- Date Bar -->
+      <div class="date-bar">
+        <span id="current-date">Today</span>
+      </div>
+      
+      <!-- Main Content -->
+      <main class="dashboard-main">
+        <!-- Progress Ring Section -->
+        <section class="progress-section">
+          <!-- Ring Labels -->
+          <div class="ring-labels">
+            <div class="ring-label calories-label">
+              <span class="ring-dot" style="background: #0066EE;"></span>
+              <span>Calories</span>
+            </div>
+            <div class="ring-label protein-label">
+              <span class="ring-dot" style="background: #EC3762;"></span>
+              <span>Protein</span>
+            </div>
+          </div>
+          
+          <div class="progress-ring-container">
+            <svg class="progress-ring" viewBox="0 0 280 280">
+              <!-- Background circles -->
+              <circle cx="140" cy="140" r="120" fill="none" stroke="#E8E8E8" stroke-width="16"/>
+              <circle cx="140" cy="140" r="100" fill="none" stroke="#F0F0F0" stroke-width="12"/>
+              <!-- Calories ring (outer) -->
+              <circle id="calories-ring" cx="140" cy="140" r="120" fill="none" stroke="#0066EE" stroke-width="16"
+                stroke-linecap="round" stroke-dasharray="753.98" stroke-dashoffset="753.98"
+                transform="rotate(-90 140 140)"/>
+              <!-- Protein ring (inner) -->
+              <circle id="protein-ring" cx="140" cy="140" r="100" fill="none" stroke="#EC3762" stroke-width="12"
+                stroke-linecap="round" stroke-dasharray="628.32" stroke-dashoffset="628.32"
+                transform="rotate(-90 140 140)"/>
+              <!-- Overflow indicator (hidden by default) -->
+              <circle id="overflow-ring" cx="140" cy="140" r="120" fill="none" stroke="#8B0000" stroke-width="16"
+                stroke-linecap="round" class="hidden"/>
+            </svg>
+            <div class="ring-center">
+              <span id="remaining-calories" class="remaining-value">2,400</span>
+              <span class="remaining-label">remaining</span>
+              <span id="overflow-indicator" class="overflow-badge hidden">+0</span>
+            </div>
+          </div>
+          
+          <!-- Stats Row -->
+          <div class="stats-row">
+            <div class="stat-item">
+              <span class="stat-label">Consumed</span>
+              <span id="consumed-calories" class="stat-value">0 kcal</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-label">Goal</span>
+              <span id="goal-calories" class="stat-value">2,400 kcal</span>
+            </div>
+          </div>
+          
+          <!-- Protein Stats -->
+          <div class="protein-stats">
+            <div class="protein-info">
+              <span class="protein-label">Protein</span>
+              <span id="protein-stats" class="protein-value">0g / 120g</span>
+            </div>
+            <div class="protein-bar-container">
+              <div id="protein-bar" class="protein-bar" style="width: 0%"></div>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Recommendations Section -->
+        <section class="recommendations-section">
+          <div class="section-header">
+            <h2 class="section-title">Recommended For You</h2>
+            <span class="refresh-hint">Updates every 4 hours</span>
+          </div>
+          <div id="recommendations-container" class="recommendations-container">
+            <!-- Recommendations rendered by JS -->
+          </div>
+        </section>
+        
+        <!-- Today's Log Section -->
+        <section class="log-section">
+          <div class="section-header">
+            <h2 class="section-title">Today's Meals</h2>
+            <span id="meal-count" class="meal-count">0 items</span>
+          </div>
+          <div id="food-log" class="food-log">
+            <div class="empty-log">
+              <div class="empty-icon">🍽️</div>
+              <p>No meals logged yet</p>
+              <p class="empty-hint">Tap + to add your first meal</p>
+            </div>
+          </div>
+        </section>
+      </main>
+      
+      <!-- FAB -->
+      <button id="add-meal-fab" class="fab-with-text">
+        <span class="fab-text">ADD MEAL</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Add Meal Modal -->
+    <div id="add-meal-modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Add Meal</h3>
+          <button class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <!-- Category Selection -->
+          <div id="category-selection" class="category-grid">
+            <button class="category-card" data-category="mess">
+              <div class="category-icon">🏫</div>
+              <span class="category-label">Mess</span>
+              <span class="category-status" id="mess-status">Open</span>
+            </button>
+            <button class="category-card" data-category="anc">
+              <div class="category-icon">🍔</div>
+              <span class="category-label">ANC</span>
+              <span class="category-status always">24/7</span>
+            </button>
+            <button class="category-card" data-category="packaged">
+              <div class="category-icon">📦</div>
+              <span class="category-label">Packaged</span>
+            </button>
+            <button class="category-card" data-category="custom">
+              <div class="category-icon">✏️</div>
+              <span class="category-label">Custom</span>
+            </button>
+          </div>
+          
+          <!-- Mess Selection (hidden initially) -->
+          <div id="mess-selection" class="selection-panel hidden">
+            <div class="selection-header">
+              <button class="back-btn">←</button>
+              <h4>Mess Menu</h4>
+            </div>
+            
+            <!-- Mess Status Banner -->
+            <div id="mess-status-banner" class="mess-status-banner">
+              <span id="mess-status-text">Mess is Open</span>
+              <span id="mess-status-time">Lunch: 12:30 - 14:00</span>
+            </div>
+            
+            <!-- Plate Graphic Reference -->
+            <div class="plate-reference">
+              <div class="plate-diagram">
+                <div class="plate-section-ref l1-ref">
+                  <span class="section-ref-label">L1</span>
+                  <span class="section-ref-desc">Curries</span>
+                </div>
+                <div class="plate-section-ref l2-ref">
+                  <span class="section-ref-label">L2</span>
+                  <span class="section-ref-desc">Dal/Curd</span>
+                </div>
+                <div class="plate-section-ref l3-ref">
+                  <span class="section-ref-label">L3</span>
+                  <span class="section-ref-desc">Sides</span>
+                </div>
+                <div class="plate-section-ref l4-ref">
+                  <span class="section-ref-label">L4</span>
+                  <span class="section-ref-desc">Rice/Bread</span>
+                </div>
+              </div>
+              <p class="plate-hint">Tap sections below to add items</p>
+            </div>
+            
+            <!-- Meal Type Tabs -->
+            <div id="mess-meal-selector" class="meal-type-tabs">
+              <button class="meal-tab active" data-meal="breakfast">Breakfast</button>
+              <button class="meal-tab" data-meal="lunch">Lunch</button>
+              <button class="meal-tab" data-meal="snacks">Snacks</button>
+              <button class="meal-tab" data-meal="dinner">Dinner</button>
+            </div>
+            
+            <!-- L1-L4 Category Tabs -->
+            <div class="section-tabs">
+              <button class="section-tab active" data-section="all">All</button>
+              <button class="section-tab" data-section="L1">L1</button>
+              <button class="section-tab" data-section="L2">L2</button>
+              <button class="section-tab" data-section="L3">L3</button>
+              <button class="section-tab" data-section="L4">L4</button>
+            </div>
+            
+            <!-- Selected Items Summary -->
+            <div id="selected-items-summary" class="selected-items-summary hidden">
+              <div class="summary-header">
+                <span id="selected-count">0 items selected</span>
+                <span id="selected-calories">0 kcal</span>
+              </div>
+            </div>
+            
+            <div id="mess-items-list" class="items-list"></div>
+            
+            <!-- Add to Log Button -->
+            <button id="add-mess-items" class="btn btn-primary btn-full" disabled>
+              Add to Log
+            </button>
+          </div>
+          
+          <!-- Mess Plate View (hidden initially) -->
+          <div id="plate-view" class="selection-panel hidden">
+            <div class="selection-header">
+              <button class="back-btn">←</button>
+              <h4>Build Your Plate</h4>
+            </div>
+            <div id="plate-container" class="plate-container">
+              <div class="mess-plate">
+                <!-- L1 Section (Top Left) -->
+                <div class="plate-section" data-section="L1">
+                  <span class="section-label">L1</span>
+                  <span class="section-type">Curries & Dry</span>
+                  <div class="section-items" id="l1-items"></div>
+                </div>
+                <!-- L2 Section (Top Right) -->
+                <div class="plate-section" data-section="L2">
+                  <span class="section-label">L2</span>
+                  <span class="section-type">Dal & Curd</span>
+                  <div class="section-items" id="l2-items"></div>
+                </div>
+                <!-- L3 Section (Bottom Left) -->
+                <div class="plate-section" data-section="L3">
+                  <span class="section-label">L3</span>
+                  <span class="section-type">Sides</span>
+                  <div class="section-items" id="l3-items"></div>
+                </div>
+                <!-- L4 Section (Bottom Right) -->
+                <div class="plate-section" data-section="L4">
+                  <span class="section-label">L4</span>
+                  <span class="section-type">Rice & Bread</span>
+                  <div class="section-items" id="l4-items"></div>
+                </div>
+              </div>
+            </div>
+            <div id="plate-selection-details" class="plate-details hidden">
+              <h5 id="selected-section-title">L1 Selection</h5>
+              <div id="section-items-list" class="section-items-list"></div>
+            </div>
+            <button id="add-plate-items" class="btn btn-primary btn-full" disabled>Add to Log</button>
+          </div>
+          
+          <!-- L4 Selection Modal (for rice/bread) -->
+          <div id="l4-selection-modal" class="subl-modal hidden">
+            <div class="subl-modal-header">
+              <h5>L4 - Rice & Bread</h5>
+              <button class="subl-modal-close">×</button>
+            </div>
+            <div class="l4-tabs">
+              <button class="l4-tab active" data-tab="rice">Rice (g)</button>
+              <button class="l4-tab" data-tab="bread">Bread (units)</button>
+            </div>
+            <div id="l4-rice-panel" class="l4-panel">
+              <div class="rice-options">
+                <button class="rice-option" data-rice="rice_plain">
+                  <span class="rice-name">Plain Rice</span>
+                  <span class="rice-info">130 kcal/100g</span>
+                </button>
+                <button class="rice-option" data-rice="rice_fried_veg">
+                  <span class="rice-name">Veg Fried Rice</span>
+                  <span class="rice-info">180 kcal/100g</span>
+                </button>
+                <button class="rice-option" data-rice="rice_biryani_veg">
+                  <span class="rice-name">Veg Biryani</span>
+                  <span class="rice-info">160 kcal/100g</span>
+                </button>
+                <button class="rice-option" data-rice="rice_lemon">
+                  <span class="rice-name">Lemon Rice</span>
+                  <span class="rice-info">150 kcal/100g</span>
+                </button>
+              </div>
+              <div class="gram-slider-container">
+                <label class="slider-label">Amount: <span id="rice-grams">250</span>g</label>
+                <input type="range" id="rice-slider" class="gram-slider" min="50" max="400" value="250" step="10">
+                <div class="slider-presets">
+                  <button data-grams="150">150g</button>
+                  <button data-grams="250" class="active">250g</button>
+                  <button data-grams="350">350g</button>
+                </div>
+              </div>
+            </div>
+            <div id="l4-bread-panel" class="l4-panel hidden">
+              <div class="bread-grid" id="bread-options">
+                <!-- Bread options populated by JS -->
+              </div>
+            </div>
+            <button id="add-l4-items" class="btn btn-primary btn-full">Add Selection</button>
+          </div>
+          
+          <!-- ANC Selection (hidden initially) -->
+          <div id="anc-selection" class="selection-panel hidden">
+            <div class="selection-header">
+              <button class="back-btn">←</button>
+              <h4>ANC Food Court</h4>
+            </div>
+            <div id="anc-categories" class="anc-categories">
+              <!-- Categories populated by JS -->
+            </div>
+            <div id="anc-items" class="anc-items hidden">
+              <div class="anc-items-header">
+                <button id="back-to-categories" class="text-link">← Back to categories</button>
+                <h5 id="anc-category-title">Category</h5>
+              </div>
+              <div id="anc-items-list" class="items-list"></div>
+            </div>
+          </div>
+          
+          <!-- Packaged Food Search (hidden initially) -->
+          <div id="packaged-selection" class="selection-panel hidden">
+            <div class="selection-header">
+              <button class="back-btn">←</button>
+              <h4>Packaged Foods</h4>
+            </div>
+            <div class="search-container">
+              <input type="text" id="packaged-search" class="search-input" placeholder="Search products...">
+              <button id="search-btn" class="search-btn">🔍</button>
+            </div>
+            <div id="search-results" class="search-results"></div>
+            <div id="portion-modal" class="portion-modal hidden">
+              <h5 id="portion-product-name">Product Name</h5>
+              <div class="portion-info">
+                <span id="portion-per-100g">0 kcal / 100g</span>
+              </div>
+              <div class="gram-slider-container">
+                <label class="slider-label">Portion: <span id="portion-grams">100</span>g</label>
+                <input type="range" id="portion-slider" class="gram-slider" min="50" max="500" value="100" step="10">
+              </div>
+              <div class="portion-preview">
+                <span id="portion-calories">0 kcal</span>
+                <span id="portion-protein">0g protein</span>
+              </div>
+              <button id="add-portion" class="btn btn-primary btn-full">Add to Log</button>
+            </div>
+          </div>
+          
+          <!-- Custom Entry (hidden initially) -->
+          <div id="custom-selection" class="selection-panel hidden">
+            <div class="selection-header">
+              <button class="back-btn">←</button>
+              <h4>Custom Entry</h4>
+            </div>
+            
+            <!-- AI Meal Description Feature -->
+            <div class="ai-description-section">
+              <div class="ai-header">
+                <span class="ai-icon">🤖</span>
+                <span class="ai-title">AI Calorie Estimator</span>
+              </div>
+              <p class="ai-hint">Describe your meal and AI will estimate calories</p>
+              <div class="ai-input-container">
+                <textarea id="ai-meal-description" class="ai-textarea" placeholder="e.g., '2 chapati with dal and rice' or 'grilled chicken sandwich with fries'"></textarea>
+                <button id="ai-estimate-btn" class="btn btn-primary btn-full">
+                  <span class="ai-btn-text">Estimate Calories</span>
+                  <span class="ai-btn-icon">✨</span>
+                </button>
+              </div>
+              <div id="ai-result" class="ai-result hidden">
+                <div class="ai-result-header">
+                  <span class="ai-result-title">Estimated Nutrition</span>
+                  <span class="ai-confidence">AI Estimate</span>
+                </div>
+                <div class="ai-nutrition-grid">
+                  <div class="ai-nutrition-item">
+                    <span class="ai-nutrition-value" id="ai-calories">0</span>
+                    <span class="ai-nutrition-label">kcal</span>
+                  </div>
+                  <div class="ai-nutrition-item">
+                    <span class="ai-nutrition-value" id="ai-protein">0</span>
+                    <span class="ai-nutrition-label">protein</span>
+                  </div>
+                  <div class="ai-nutrition-item">
+                    <span class="ai-nutrition-value" id="ai-carbs">0</span>
+                    <span class="ai-nutrition-label">carbs</span>
+                  </div>
+                  <div class="ai-nutrition-item">
+                    <span class="ai-nutrition-value" id="ai-fat">0</span>
+                    <span class="ai-nutrition-label">fat</span>
+                  </div>
+                </div>
+                <button id="ai-add-to-log" class="btn btn-primary btn-full">Add This to Log</button>
+              </div>
+            </div>
+            
+            <div class="custom-divider">
+              <span>OR enter manually</span>
+            </div>
+            
+            <div class="custom-form">
+              <div class="form-group">
+                <label class="form-label">Food Name</label>
+                <input type="text" id="custom-name" class="form-input" placeholder="e.g., Homemade Curry">
+              </div>
+              <div class="nutrition-grid">
+                <div class="form-group">
+                  <label class="form-label">Calories</label>
+                  <input type="number" id="custom-calories-input" class="form-input" placeholder="kcal">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Protein (g)</label>
+                  <input type="number" id="custom-protein-input" class="form-input" placeholder="g" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Carbs (g)</label>
+                  <input type="number" id="custom-carbs-input" class="form-input" placeholder="g" step="0.1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Fat (g)</label>
+                  <input type="number" id="custom-fat-input" class="form-input" placeholder="g" step="0.1">
+                </div>
+              </div>
+              <button id="add-custom-item" class="btn btn-primary btn-full">Add to Log</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Side Menu -->
+    <div id="side-menu" class="side-menu">
+      <div class="side-menu-header">
+        <div class="user-info">
+          <div class="user-avatar">👤</div>
+          <div class="user-details">
+            <span class="user-name">Student</span>
+            <span class="user-stats" id="menu-stats">0/2400 kcal</span>
+          </div>
+        </div>
+        <button id="close-menu" class="icon-btn">×</button>
+      </div>
+      <nav class="side-menu-nav">
+        <a href="#" class="menu-item" data-view="dashboard">
+          <span class="menu-icon">📊</span>
+          <span class="menu-text">Dashboard</span>
+        </a>
+        <a href="#" class="menu-item" data-view="history">
+          <span class="menu-icon">📅</span>
+          <span class="menu-text">History</span>
+        </a>
+        <a href="#" class="menu-item" data-view="goals">
+          <span class="menu-icon">🎯</span>
+          <span class="menu-text">Goals</span>
+        </a>
+        <a href="admin.html" class="menu-item">
+          <span class="menu-icon">⚙️</span>
+          <span class="menu-text">Admin Panel</span>
+        </a>
+      </nav>
+      <div class="side-menu-footer">
+        <p class="app-version">Campus Calories v2.0</p>
+      </div>
+    </div>
+    <div id="menu-overlay" class="menu-overlay"></div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+  
+  <!-- Scripts -->
+  <script src="js/database.js"></script>
+  <script src="js/nutrition-data.js"></script>
+  <script src="js/mess-menu.js"></script>
+  <script src="js/anc-menu.js"></script>
+  <script src="js/recommendations.js"></script>
+  <script src="js/app.js"></script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registered'))
+        .catch(err => console.log('Service Worker registration failed'));
+    }
+  </script>
+</body>
+</html>
