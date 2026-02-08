@@ -1517,6 +1517,7 @@ async function estimateMealCalories() {
       return;
     }
     // Fallback to local
+    console.warn('Gemini API Key missing, falling back to local');
     const result = parseMealDescription(description);
     displayAIResult(result, description);
     return;
@@ -1528,11 +1529,14 @@ async function estimateMealCalories() {
   btn.disabled = true;
 
   try {
+    console.log(' calling Gemini API...');
     const result = await callGeminiAPI(description);
+    console.log('Gemini API result:', result);
     displayAIResult(result, description);
+    showToast('Estimated using Gemini AI', 'success');
   } catch (error) {
     console.error('AI Estimation failed:', error);
-    showToast('AI estimation failed. Using basic local estimator.', 'error');
+    showToast(`AI Error: ${error.message}. Using basic estimator.`, 'error');
     // Fallback
     const result = parseMealDescription(description);
     displayAIResult(result, description);
@@ -1568,7 +1572,10 @@ async function callGeminiAPI(description) {
     })
   });
 
-  if (!response.ok) throw new Error('Gemini API request failed');
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API Request failed: ${response.status} ${errorText}`);
+  }
 
   const data = await response.json();
   const text = data.candidates[0].content.parts[0].text;
