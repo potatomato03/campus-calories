@@ -223,8 +223,8 @@ async function updateCloudDailySummary(date) {
       user_id: user.id,
       date: date,
       ...totals,
-      calorie_goal: profile?.dailyCalorieGoal || 2400,
-      protein_goal: profile?.dailyProteinGoal || 120,
+      calorie_goal: profile?.dailyCalorieGoal || profile?.calculatedCalories || 2000,
+      protein_goal: profile?.dailyProteinGoal || profile?.calculatedProtein || 50,
       updated_at: new Date().toISOString()
     }, {
       onConflict: 'user_id,date'

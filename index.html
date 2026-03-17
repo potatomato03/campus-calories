@@ -158,9 +158,9 @@
           </div>
           <div id="custom-goals-inputs" class="custom-goals-form hidden">
             <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Calories</label>
-                <input type="number" id="custom-calories" class="form-input" placeholder="2400">
+              <div class="custom-goal-input">
+                <label for="custom-calories">Daily Calories (kcal)</label>
+                <input type="number" id="custom-calories" class="form-input" placeholder="e.g. 2000">
               </div>
               <div class="form-group">
                 <label class="form-label">Protein (g)</label>
@@ -253,7 +253,7 @@
                 stroke-linecap="round" class="hidden"/>
             </svg>
             <div class="ring-center">
-              <span id="remaining-calories" class="remaining-value">2,400</span>
+              <span id="remaining-calories" class="remaining-value">--</span>
               <span class="remaining-label">remaining</span>
               <span id="overflow-indicator" class="overflow-badge hidden">+0</span>
             </div>
@@ -268,7 +268,7 @@
             <div class="stat-divider"></div>
             <div class="stat-item">
               <span class="stat-label">Goal</span>
-              <span id="goal-calories" class="stat-value">2,400 kcal</span>
+              <span id="goal-calories" class="stat-value">-- kcal</span>
             </div>
           </div>
           
@@ -674,7 +674,9 @@
           <div class="user-avatar">👤</div>
           <div class="user-details">
             <span class="user-name">Student</span>
-            <span class="user-stats" id="menu-stats">0/2400 kcal</span>
+          </div>
+          <div class="user-meta">
+            <span class="user-stats" id="menu-stats">Loading...</span>
           </div>
         </div>
         <button id="close-menu" class="icon-btn">×</button>

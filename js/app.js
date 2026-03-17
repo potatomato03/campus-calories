@@ -439,8 +439,8 @@ function updateProgressRings() {
   if (!profile) return;
 
   const { calories, protein } = AppState.dailyTotals;
-  const calorieGoal = profile.dailyCalorieGoal || 2400;
-  const proteinGoal = profile.dailyProteinGoal || 120;
+  const calorieGoal = profile.dailyCalorieGoal || profile.calculatedCalories || 2000;
+  const proteinGoal = profile.dailyProteinGoal || profile.calculatedProtein || 50;
 
   // Calculate remaining
   const remaining = Math.max(0, calorieGoal - calories);
@@ -468,6 +468,12 @@ function updateProgressRings() {
   }
   if (DOM.proteinStats) {
     DOM.proteinStats.textContent = `${Math.round(protein)}g / ${proteinGoal}g`;
+  }
+
+  // Update side menu stats
+  const menuStats = document.getElementById('menu-stats');
+  if (menuStats) {
+    menuStats.textContent = `${Math.round(calories)}/${calorieGoal} kcal`;
   }
 
   // Update protein bar
@@ -1271,7 +1277,7 @@ async function addAncItemToLog(item) {
     carbs: item.carbs,
     fat: item.fat,
     date: AppState.selectedDate,
-    portion: `${item.weight}g serving`,
+    portion: item.weight ? `${item.weight}g serving` : '1 serving',
     price: item.price,
     timestamp: Date.now()
   });
