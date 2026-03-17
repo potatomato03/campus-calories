@@ -18,8 +18,9 @@ const AppState = {
   selectedBreads: new Map(),
   riceGrams: 250,
   onboardingStep: 1,
-  tempProfile: {},
-  geminiApiKey: null
+  tempProfile: { goalMode: 'maintenance' },
+  geminiApiKey: null,
+  authUser: null
 };
 
 // ==================== TDEE CONSTANTS ====================
@@ -31,10 +32,25 @@ const TDEE_CONSTANTS = {
     moderate: 1.55,
     pro: 1.725
   },
+  // Goal-based calorie adjustments from maintenance TDEE
+  goalCalorieAdjustment: {
+    cutting: -500,      // ~0.45 kg/week fat loss
+    maintenance: 0,
+    bulking: 300         // Lean bulk surplus
+  },
+  // Evidence-based protein per kg bodyweight by goal (g/kg)
+  // Cutting: high protein preserves lean mass during deficit (Helms et al., 2014)
+  // Maintenance: RDA-aligned for general health + active lifestyle
+  // Bulking: adequate for muscle protein synthesis in caloric surplus
   proteinPerKg: {
-    lite: 1.2,
-    moderate: 1.6,
-    pro: 2.0
+    cutting: 2.0,
+    maintenance: 1.0,
+    bulking: 1.6
+  },
+  // Minimum safe daily calorie floors
+  minCalories: {
+    male: 1500,
+    female: 1200
   }
 };
 
@@ -49,7 +65,15 @@ async function initApp() {
 
   try {
     await initDatabase();
+    initSupabase();
     cacheDOMElements();
+
+    // Check auth state
+    const session = await getAuthSession();
+    if (session) {
+      AppState.authUser = session.user;
+      updateAuthUI(session.user);
+    }
 
     AppState.userProfile = await getUserProfile();
 
@@ -66,6 +90,7 @@ async function initApp() {
 
     await initializeMessMenuData();
     setupEventListeners();
+    setupAuthListener();
 
     console.log('App initialized successfully');
   } catch (error) {
@@ -223,6 +248,16 @@ function setupOnboardingListeners() {
     });
   });
 
+  // Goal mode selection (Cutting / Maintenance / Bulking)
+  document.querySelectorAll('#goal-mode-options .activity-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('#goal-mode-options .activity-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      AppState.tempProfile.goalMode = opt.dataset.goal;
+      calculateGoals(); // Recalculate with new goal mode
+    });
+  });
+
   // Navigation
   DOM.onboardingPrev?.addEventListener('click', () => {
     if (AppState.onboardingStep > 1) {
@@ -296,8 +331,9 @@ function validateOnboardingStep() {
 
 function calculateGoals() {
   const { gender, weight, height, age, activity } = AppState.tempProfile;
+  const goalMode = AppState.tempProfile.goalMode || 'maintenance';
 
-  // BMR Calculation (Mifflin-St Jeor)
+  // BMR Calculation (Mifflin-St Jeor equation)
   let bmr;
   if (gender === 'male') {
     bmr = (10 * weight) + (6.25 * height) - (5 * age) + TDEE_CONSTANTS.bmrMaleMultiplier;
@@ -305,23 +341,41 @@ function calculateGoals() {
     bmr = (10 * weight) + (6.25 * height) - (5 * age) + TDEE_CONSTANTS.bmrFemaleMultiplier;
   }
 
-  // TDEE
+  // TDEE = BMR × Activity Factor
   const tdee = Math.round(bmr * TDEE_CONSTANTS.activityMultipliers[activity]);
 
-  // Protein goal
-  const proteinGoal = Math.round(weight * TDEE_CONSTANTS.proteinPerKg[activity]);
+  // Apply goal-based calorie adjustment
+  let adjustedCalories = tdee + (TDEE_CONSTANTS.goalCalorieAdjustment[goalMode] || 0);
+
+  // Enforce minimum safe calorie floor
+  const minCal = TDEE_CONSTANTS.minCalories[gender] || 1200;
+  adjustedCalories = Math.max(adjustedCalories, minCal);
+
+  // Goal-based protein target (g/kg bodyweight)
+  const proteinGoal = Math.round(weight * (TDEE_CONSTANTS.proteinPerKg[goalMode] || 1.0));
 
   AppState.tempProfile.calculatedCalories = tdee;
   AppState.tempProfile.calculatedProtein = proteinGoal;
-  AppState.tempProfile.dailyCalorieGoal = tdee;
+  AppState.tempProfile.dailyCalorieGoal = adjustedCalories;
   AppState.tempProfile.dailyProteinGoal = proteinGoal;
 
   // Update UI
   if (DOM.calculatedCalories) {
-    DOM.calculatedCalories.textContent = tdee.toLocaleString();
+    DOM.calculatedCalories.textContent = adjustedCalories.toLocaleString();
   }
   if (DOM.calculatedProtein) {
     DOM.calculatedProtein.textContent = proteinGoal;
+  }
+
+  // Update goal note text
+  const goalNoteEl = document.getElementById('goal-note-text');
+  if (goalNoteEl) {
+    const notes = {
+      cutting: `TDEE (${tdee.toLocaleString()}) \u2212 500 kcal for fat loss`,
+      maintenance: 'Based on your TDEE calculation',
+      bulking: `TDEE (${tdee.toLocaleString()}) + 300 kcal for lean gains`
+    };
+    goalNoteEl.textContent = notes[goalMode] || notes.maintenance;
   }
 }
 
@@ -348,12 +402,16 @@ function updateOnboardingUI() {
 async function completeOnboardingFlow() {
   const profile = {
     ...AppState.tempProfile,
+    goalMode: AppState.tempProfile.goalMode || 'maintenance',
     onboardingCompleted: true,
     onboardingCompletedAt: new Date().toISOString()
   };
 
   await saveUserProfile(profile);
   AppState.userProfile = profile;
+
+  // Sync to cloud if authenticated
+  syncProfileToCloud(profile).catch(() => {});
 
   showDashboard();
   showToast('Welcome to Campus Calories!', 'success');
@@ -1404,7 +1462,7 @@ const AI_FOOD_DATABASE = {
   'roti': { calories: 120, protein: 3, carbs: 20, fat: 2.8, weight: 40 },
   'paratha': { calories: 210, protein: 4.5, carbs: 28, fat: 9.5, weight: 80 },
   'naan': { calories: 260, protein: 6, carbs: 42, fat: 8, weight: 80 },
-  'dosa': { calories: 85, protein: 2, carbs: 16, fat: 1, weight: 80 },
+  'dosa': { calories: 85, protein: 2, carbs: 16, fat: 1, weight: 40 },
   'idli': { calories: 39, protein: 1.6, carbs: 8, fat: 0.2, weight: 40 },
   'poori': { calories: 80, protein: 1.5, carbs: 10, fat: 4, weight: 25 },
 
@@ -1509,8 +1567,6 @@ async function estimateMealCalories() {
 
   // Check for API Key
   if (!AppState.geminiApiKey) {
-    // Check local keyword fallback first? No, let's prompt for key or use basic local
-    // For now, let's try to prompt the user to go to settings
     if (confirm('Gemini API Key is missing. Would you like to add it in Settings for better accuracy?')) {
       showSettings();
       closeAllModals();
@@ -1529,15 +1585,22 @@ async function estimateMealCalories() {
   btn.disabled = true;
 
   try {
-    console.log(' calling Gemini API...');
+    console.log('Calling Gemini API...');
     const result = await callGeminiAPI(description);
     console.log('Gemini API result:', result);
+
+    // Validate result structure
+    if (!result || typeof result.calories !== 'number') {
+      throw new Error('Invalid response format from AI');
+    }
+
     displayAIResult(result, description);
     showToast('Estimated using Gemini AI', 'success');
   } catch (error) {
     console.error('AI Estimation failed:', error);
     showToast(`AI Error: ${error.message}. Using basic estimator.`, 'error');
-    // Fallback
+
+    // Fallback to local on error, but notify user
     const result = parseMealDescription(description);
     displayAIResult(result, description);
   } finally {

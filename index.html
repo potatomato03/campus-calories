@@ -117,6 +117,29 @@
             <span class="step-dot"></span>
           </div>
           <h2 class="step-title">Your Goals</h2>
+          <div class="activity-options" id="goal-mode-options" style="margin-bottom: 16px;">
+            <button class="activity-option" data-goal="cutting">
+              <div class="activity-icon">🔻</div>
+              <div class="activity-info">
+                <div class="activity-name">Cutting</div>
+                <div class="activity-desc">Lose fat, preserve muscle</div>
+              </div>
+            </button>
+            <button class="activity-option selected" data-goal="maintenance">
+              <div class="activity-icon">⚖️</div>
+              <div class="activity-info">
+                <div class="activity-name">Maintenance</div>
+                <div class="activity-desc">Stay at current weight</div>
+              </div>
+            </button>
+            <button class="activity-option" data-goal="bulking">
+              <div class="activity-icon">🔺</div>
+              <div class="activity-info">
+                <div class="activity-name">Bulking</div>
+                <div class="activity-desc">Build muscle, gain weight</div>
+              </div>
+            </button>
+          </div>
           <div class="goal-display-card">
             <div class="goal-item">
               <span class="goal-label">Daily Calories</span>
@@ -129,7 +152,7 @@
               <span class="goal-unit">g</span>
             </div>
           </div>
-          <p class="goal-note">Based on your TDEE calculation</p>
+          <p id="goal-note-text" class="goal-note">Based on your TDEE calculation</p>
           <div class="custom-goal-toggle">
             <button id="toggle-custom-goals" class="text-link">Set custom goals</button>
           </div>
@@ -673,6 +696,14 @@
           <span class="menu-icon">⚙️</span>
           <span class="menu-text">Admin Panel</span>
         </a>
+        <a href="#" id="google-sign-in-btn" class="menu-item" onclick="event.preventDefault(); signInWithGoogle();">
+          <span class="menu-icon">🔑</span>
+          <span class="menu-text">Sign in with Google</span>
+        </a>
+        <a href="#" id="sign-out-btn" class="menu-item hidden" onclick="event.preventDefault(); signOutUser();">
+          <span class="menu-icon">🚪</span>
+          <span class="menu-text">Sign Out</span>
+        </a>
       </nav>
       <div class="side-menu-footer">
         <p class="app-version">Campus Calories v2.0</p>
@@ -684,7 +715,12 @@
     <div id="toast-container" class="toast-container"></div>
   </div>
   
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <!-- Scripts -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/database.js"></script>
   <script src="js/nutrition-data.js"></script>
   <script src="js/mess-menu.js"></script>

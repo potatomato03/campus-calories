@@ -121,6 +121,12 @@ async function saveUserProfile(profile) {
 async function addFoodEntry(entry) {
   entry.timestamp = new Date().toISOString();
   const id = await putInStore(STORES.FOOD_LOG, entry);
+
+  // Cloud sync (fire and forget — offline-first)
+  if (typeof syncFoodEntryToCloud === 'function') {
+    syncFoodEntryToCloud(entry).catch(() => {});
+  }
+
   return id;
 }
 
