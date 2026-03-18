@@ -224,6 +224,26 @@ function setupEventListeners() {
         submitBtn.disabled = false;
       }
     });
+
+    const guestBtn = document.getElementById('btn-guest-login');
+    if (guestBtn) {
+      guestBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const prevText = guestBtn.textContent;
+        guestBtn.textContent = 'Logging in...';
+        guestBtn.disabled = true;
+        try {
+          if (typeof signInAsGuest === 'function') {
+            await signInAsGuest();
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          guestBtn.textContent = prevText;
+          guestBtn.disabled = false;
+        }
+      });
+    }
   }
 
   // Category selection

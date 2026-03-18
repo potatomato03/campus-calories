@@ -33,7 +33,11 @@ async function signUpWithEmail(email, password, fullName) {
     }
   } catch (err) {
     console.error('Sign up error:', err);
-    showAuthError('Sign up failed: ' + err.message);
+    if (err.status === 429 || err.message.toLowerCase().includes('rate limit')) {
+      showAuthError('Email rate limit exceeded. Please try again later or Continue as Guest.');
+    } else {
+      showAuthError('Sign up failed: ' + err.message);
+    }
   }
 }
 
@@ -58,6 +62,25 @@ async function signInWithEmail(email, password) {
   }
 }
 
+async function signInAsGuest() {
+  AppState.authUser = { id: 'guest', isGuest: true, email: 'guest@local' };
+  localStorage.setItem('guestMode', 'true');
+  
+  // Check if we have a local profile saved
+  const profile = await getUserProfile();
+  
+  if (profile && profile.onboardingCompleted) {
+    AppState.userProfile = profile;
+    showScreen('dashboard-screen');
+    if (typeof loadDailyLog === 'function') {
+      await loadDailyLog();
+    }
+  } else {
+    showScreen('onboarding-screen');
+  }
+  showToast('Continuing as Guest (Offline Mode)', 'success');
+}
+
 function showAuthError(msg) {
   const errDiv = document.getElementById('auth-error');
   if (errDiv) {
@@ -70,6 +93,15 @@ function showAuthError(msg) {
 }
 
 async function signOutUser() {
+  if (AppState.authUser?.isGuest || localStorage.getItem('guestMode') === 'true') {
+    AppState.authUser = null;
+    AppState.userProfile = null;
+    localStorage.removeItem('guestMode');
+    showScreen('auth-screen');
+    showToast('Signed out successfully', 'success');
+    return;
+  }
+
   const client = getSupabase();
   if (!client) return;
 
@@ -86,6 +118,10 @@ async function signOutUser() {
 }
 
 async function getAuthSession() {
+  if (localStorage.getItem('guestMode') === 'true') {
+    return { user: { id: 'guest', isGuest: true, email: 'guest@local' } };
+  }
+
   const client = getSupabase();
   if (!client) return null;
 
@@ -137,7 +173,7 @@ function setupAuthListener() {
 async function syncProfileToCloud(profile) {
   const client = getSupabase();
   const user = AppState.authUser;
-  if (!client || !user) return;
+  if (!client || !user || user.isGuest) return;
 
   try {
     const { error } = await client.from('user_profiles').upsert({
@@ -204,7 +240,7 @@ async function syncProfileFromCloud(userId) {
 async function syncFoodEntryToCloud(entry) {
   const client = getSupabase();
   const user = AppState.authUser;
-  if (!client || !user) return;
+  if (!client || !user || user.isGuest) return;
 
   try {
     const { error } = await client.from('daily_logs').insert({
@@ -233,7 +269,7 @@ async function syncFoodEntryToCloud(entry) {
 async function updateCloudDailySummary(date) {
   const client = getSupabase();
   const user = AppState.authUser;
-  if (!client || !user) return;
+  if (!client || !user || user.isGuest) return;
 
   try {
     const { data: entries, error: fetchError } = await client.from('daily_logs')
@@ -275,7 +311,7 @@ async function updateCloudDailySummary(date) {
 async function getWeeklyAnalytics() {
   const client = getSupabase();
   const user = AppState.authUser;
-  if (!client || !user) return null;
+  if (!client || !user || user.isGuest) return null;
 
   try {
     const today = new Date();
@@ -300,7 +336,7 @@ async function getWeeklyAnalytics() {
 async function getMonthlyAnalytics() {
   const client = getSupabase();
   const user = AppState.authUser;
-  if (!client || !user) return null;
+  if (!client || !user || user.isGuest) return null;
 
   try {
     const today = new Date();
