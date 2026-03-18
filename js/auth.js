@@ -5,7 +5,7 @@
 
 // ==================== AUTH FUNCTIONS ====================
 
-async function signInWithGoogle() {
+async function signUpWithEmail(email, password, fullName) {
   const client = getSupabase();
   if (!client) {
     showToast('Cloud features not configured', 'error');
@@ -13,16 +13,59 @@ async function signInWithGoogle() {
   }
 
   try {
-    const { data, error } = await client.auth.signInWithOAuth({
-      provider: 'google',
+    const { data, error } = await client.auth.signUp({
+      email,
+      password,
       options: {
-        redirectTo: window.location.origin + window.location.pathname
+        data: {
+          full_name: fullName
+        }
       }
     });
+
     if (error) throw error;
+    
+    if (data.session) {
+      showToast('Signed up successfully!', 'success');
+      // showScreen('onboarding-screen') will be handled by the auth state change listener automatically
+    } else {
+      showToast('Please check your email to verify your account.', 'info');
+    }
+  } catch (err) {
+    console.error('Sign up error:', err);
+    showAuthError('Sign up failed: ' + err.message);
+  }
+}
+
+async function signInWithEmail(email, password) {
+  const client = getSupabase();
+  if (!client) {
+    showToast('Cloud features not configured', 'error');
+    return;
+  }
+
+  try {
+    const { data, error } = await client.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) throw error;
+    showToast('Logged in successfully', 'success');
   } catch (err) {
     console.error('Sign in error:', err);
-    showToast('Sign in failed: ' + err.message, 'error');
+    showAuthError('Login failed: ' + err.message);
+  }
+}
+
+function showAuthError(msg) {
+  const errDiv = document.getElementById('auth-error');
+  if (errDiv) {
+    errDiv.textContent = msg;
+    errDiv.classList.remove('hidden');
+    setTimeout(() => errDiv.classList.add('hidden'), 5000);
+  } else {
+    showToast(msg, 'error');
   }
 }
 
@@ -61,7 +104,7 @@ async function getAuthUser() {
 }
 
 function setupAuthListener() {
-  const client = getSupabase();
+      const client = getSupabase();
   if (!client) return;
 
   client.auth.onAuthStateChange(async (event, session) => {
@@ -69,34 +112,26 @@ function setupAuthListener() {
 
     if (event === 'SIGNED_IN' && session) {
       AppState.authUser = session.user;
-      updateAuthUI(session.user);
       await syncProfileFromCloud(session.user.id);
+      
+      // Navigate to app if coming from auth screen
+      if (document.getElementById('auth-screen') && !document.getElementById('auth-screen').classList.contains('hidden')) {
+        if (AppState.userProfile && AppState.userProfile.onboardingCompleted) {
+          showScreen('dashboard-screen');
+          await loadDailyLog();
+        } else {
+          showScreen('onboarding-screen');
+        }
+      }
     } else if (event === 'SIGNED_OUT') {
       AppState.authUser = null;
-      updateAuthUI(null);
+      AppState.userProfile = null;
+      showScreen('auth-screen');
     }
   });
 }
 
-function updateAuthUI(user) {
-  const signInBtn = document.getElementById('google-sign-in-btn');
-  const signOutBtn = document.getElementById('sign-out-btn');
-  const userName = document.querySelector('.user-name');
-
-  if (user) {
-    signInBtn?.classList.add('hidden');
-    signOutBtn?.classList.remove('hidden');
-    if (userName) {
-      userName.textContent = user.user_metadata?.full_name || user.email || 'Student';
-    }
-  } else {
-    signInBtn?.classList.remove('hidden');
-    signOutBtn?.classList.add('hidden');
-    if (userName) {
-      userName.textContent = 'Student';
-    }
-  }
-}
+// Removed updateAuthUI as auth screen replaces toggling auth button visibility
 
 // ==================== CLOUD SYNC ====================
 

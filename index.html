@@ -25,11 +25,47 @@
   <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/mess-plate.css">
   <link rel="stylesheet" href="css/onboarding.css">
+  <link rel="stylesheet" href="css/analytics.css">
   <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
   <!-- App Container -->
   <div id="app">
+    
+    <!-- Authentication Screen -->
+    <div id="auth-screen" class="screen">
+      <div class="onboarding-container auth-container">
+        <div class="onboarding-header">
+          <div class="onboarding-logo">Campus Calories</div>
+          <p class="onboarding-subtitle">Log in to track your nutrition</p>
+        </div>
+        
+        <div class="auth-form-container">
+          <div class="auth-tabs" style="display: flex; gap: 8px; margin-bottom: 24px;">
+            <button class="btn btn-outline active" id="tab-login" style="flex: 1;">Log In</button>
+            <button class="btn btn-outline" id="tab-signup" style="flex: 1;">Sign Up</button>
+          </div>
+          
+          <form id="auth-form" class="auth-form">
+            <div class="form-group hidden" id="auth-name-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="auth-name" class="form-input" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" id="auth-email" class="form-input" placeholder="student@university.edu" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required minlength="6">
+            </div>
+            <button type="submit" id="auth-submit-btn" class="btn btn-primary" style="width: 100%;">Log In</button>
+          </form>
+          
+          <div id="auth-error" class="hidden" style="color: var(--color-danger); margin-top: 16px; text-align: center; font-size: 14px;"></div>
+        </div>
+      </div>
+    </div>
     
     <!-- Onboarding Screen -->
     <div id="onboarding-screen" class="screen">
@@ -665,8 +701,67 @@
           </div>
         </div>
       </div>
+          </div>
+        </div>
+      </div>
     </div>
     
+    <!-- Analytics Screen -->
+    <div id="analytics-screen" class="screen hidden">
+      <header class="app-header">
+        <button id="analytics-back-btn" class="icon-btn back-btn" data-view="dashboard">←</button>
+        <h1 class="header-title">Analytics & Streaks</h1>
+        <div style="width: 44px;"></div>
+      </header>
+
+      <div class="analytics-content">
+        <!-- Streak Card -->
+        <div class="analytics-card streak-card">
+          <div class="streak-icon">🔥</div>
+          <div class="streak-details">
+            <h2 id="current-streak" class="streak-count">0 Days</h2>
+            <p class="streak-label">Current Streak</p>
+          </div>
+        </div>
+
+        <!-- Weekly Summary -->
+        <div class="analytics-section">
+          <h3 class="section-title">Weekly Averages</h3>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-box-label">Calories</div>
+              <div id="avg-calories" class="stat-box-value">--</div>
+              <div class="stat-box-unit">kcal/day</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-label">Protein</div>
+              <div id="avg-protein" class="stat-box-value">--</div>
+              <div class="stat-box-unit">g/day</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="analytics-section">
+          <h3 class="section-title">Achievements</h3>
+          <div class="achievements-grid" id="achievements-container">
+            <div class="achievement-badge locked" id="badge-first-goal">
+              <div class="badge-icon">🎯</div>
+              <div class="badge-name">First Goal</div>
+            </div>
+            <div class="achievement-badge locked" id="badge-streak-3">
+              <div class="badge-icon">🔥</div>
+              <div class="badge-name">3-Day Streak</div>
+            </div>
+            <div class="achievement-badge locked" id="badge-streak-7">
+              <div class="badge-icon">⭐</div>
+              <div class="badge-name">7-Day Streak</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Side Menu -->
     <div id="side-menu" class="side-menu">
       <div class="side-menu-header">
@@ -686,6 +781,10 @@
           <span class="menu-icon">📊</span>
           <span class="menu-text">Dashboard</span>
         </a>
+        <a href="#" class="menu-item" data-view="analytics">
+          <span class="menu-icon">📈</span>
+          <span class="menu-text">Analytics & Streaks</span>
+        </a>
         <a href="#" class="menu-item" data-view="history">
           <span class="menu-icon">📅</span>
           <span class="menu-text">History</span>
@@ -697,10 +796,6 @@
         <a href="admin.html" class="menu-item">
           <span class="menu-icon">⚙️</span>
           <span class="menu-text">Admin Panel</span>
-        </a>
-        <a href="#" id="google-sign-in-btn" class="menu-item" onclick="event.preventDefault(); signInWithGoogle();">
-          <span class="menu-icon">🔑</span>
-          <span class="menu-text">Sign in with Google</span>
         </a>
         <a href="#" id="sign-out-btn" class="menu-item hidden" onclick="event.preventDefault(); signOutUser();">
           <span class="menu-icon">🚪</span>
@@ -723,6 +818,8 @@
   <!-- Scripts -->
   <script src="js/supabase-config.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/analytics.js"></script>
   <script src="js/database.js"></script>
   <script src="js/nutrition-data.js"></script>
   <script src="js/mess-menu.js"></script>

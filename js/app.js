@@ -67,12 +67,16 @@ async function initApp() {
     await initDatabase();
     initSupabase();
     cacheDOMElements();
+    setupEventListeners();
 
     // Check auth state
     const session = await getAuthSession();
     if (session) {
       AppState.authUser = session.user;
-      updateAuthUI(session.user);
+    } else {
+      // Not authenticated, MUST login
+      showScreen('auth-screen');
+      return;
     }
 
     AppState.userProfile = await getUserProfile();
@@ -80,16 +84,15 @@ async function initApp() {
     const hasCompleted = await hasCompletedOnboarding();
 
     if (!hasCompleted || !AppState.userProfile) {
-      showOnboarding();
+      showScreen('onboarding-screen');
     } else {
-      showDashboard();
+      showScreen('dashboard-screen');
       await loadDailyLog();
       // Load API Key
       AppState.geminiApiKey = await getSetting('geminiApiKey');
     }
 
     await initializeMessMenuData();
-    setupEventListeners();
     setupAuthListener();
 
     console.log('App initialized successfully');
@@ -101,8 +104,10 @@ async function initApp() {
 
 function cacheDOMElements() {
   // Screens
+  DOM.authScreen = document.getElementById('auth-screen');
   DOM.onboardingScreen = document.getElementById('onboarding-screen');
   DOM.dashboardScreen = document.getElementById('dashboard-screen');
+  DOM.analyticsScreen = document.getElementById('analytics-screen');
 
   // Onboarding
   DOM.onboardingSteps = document.querySelectorAll('.onboarding-step');
@@ -169,6 +174,58 @@ function setupEventListeners() {
     el.addEventListener('click', closeAllModals);
   });
 
+  // Auth form tabs
+  const tabLogin = document.getElementById('tab-login');
+  const tabSignup = document.getElementById('tab-signup');
+  const nameGroup = document.getElementById('auth-name-group');
+  const submitBtn = document.getElementById('auth-submit-btn');
+  const authForm = document.getElementById('auth-form');
+
+  if (tabLogin && tabSignup && authForm) {
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('active');
+      tabSignup.classList.remove('active');
+      nameGroup.classList.add('hidden');
+      submitBtn.textContent = 'Log In';
+    });
+
+    tabSignup.addEventListener('click', () => {
+      tabSignup.classList.add('active');
+      tabLogin.classList.remove('active');
+      nameGroup.classList.remove('hidden');
+      submitBtn.textContent = 'Sign Up';
+    });
+
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const isSignup = tabSignup.classList.contains('active');
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      const name = document.getElementById('auth-name').value;
+      
+      const prevText = submitBtn.textContent;
+      submitBtn.textContent = 'Processing...';
+      submitBtn.disabled = true;
+
+      try {
+        if (isSignup) {
+          if (typeof signUpWithEmail === 'function') {
+            await signUpWithEmail(email, password, name);
+          }
+        } else {
+          if (typeof signInWithEmail === 'function') {
+            await signInWithEmail(email, password);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        submitBtn.textContent = prevText;
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
   // Category selection
   document.querySelectorAll('.category-card').forEach(card => {
     card.addEventListener('click', () => selectCategory(card.dataset.category));
@@ -209,8 +266,19 @@ function setupEventListeners() {
 
 // ==================== NAVIGATION ====================
 function showScreen(screenId) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.querySelectorAll('.screen').forEach(s => {
+    // Only hide top level screens
+    if (['auth-screen', 'onboarding-screen', 'dashboard-screen', 'analytics-screen'].includes(s.id)) {
+      s.classList.add('hidden');
+    }
+  });
+  
   document.getElementById(screenId)?.classList.remove('hidden');
+
+  // specific initializers
+  if (screenId === 'analytics-screen' && typeof initAnalytics === 'function') {
+    initAnalytics();
+  }
 
   // Close menu if open
   DOM.sideMenu?.classList.remove('open');
@@ -1814,7 +1882,10 @@ function setupSideMenuListeners() {
       if (view === 'settings') {
         showSettings();
       } else if (view === 'dashboard') {
-        showDashboard();
+        showScreen('dashboard-screen');
+      } else if (view === 'analytics') {
+        showScreen('analytics-screen');
+        if (typeof initAnalytics === 'function') initAnalytics();
       } else {
         // Placeholder for history/goals
         console.log('Navigate to', view);
