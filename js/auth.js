@@ -78,7 +78,6 @@ async function signOutUser() {
     if (error) throw error;
 
     AppState.authUser = null;
-    updateAuthUI(null);
     showToast('Signed out successfully', 'success');
   } catch (err) {
     console.error('Sign out error:', err);
