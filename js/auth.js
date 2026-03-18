@@ -81,6 +81,29 @@ async function signInAsGuest() {
   showToast('Continuing as Guest (Offline Mode)', 'success');
 }
 
+async function signInWithGoogle() {
+  const client = getSupabase();
+  if (!client) {
+    showToast('Cloud features not configured', 'error');
+    return;
+  }
+
+  try {
+    const { data, error } = await client.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+
+    if (error) throw error;
+    console.log('Google sign-in initiated');
+  } catch (err) {
+    console.error('Google sign-in error:', err);
+    showAuthError('Google sign-in failed: ' + err.message);
+  }
+}
+
 function showAuthError(msg) {
   const errDiv = document.getElementById('auth-error');
   if (errDiv) {

@@ -244,6 +244,26 @@ function setupEventListeners() {
         }
       });
     }
+
+    const googleBtn = document.getElementById('btn-google-signin');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const prevText = googleBtn.textContent;
+        googleBtn.textContent = 'Signing in...';
+        googleBtn.disabled = true;
+        try {
+          if (typeof signInWithGoogle === 'function') {
+            await signInWithGoogle();
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          googleBtn.textContent = prevText;
+          googleBtn.disabled = false;
+        }
+      });
+    }
   }
 
   // Category selection
