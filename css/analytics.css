@@ -172,3 +172,71 @@
   background: rgba(255, 59, 48, 0.1);
   border-radius: 8px;
 }
+
+/* Goals Screen Styles */
+.goals-content {
+  padding: 16px;
+  overflow-y: auto;
+  height: calc(100vh - 60px);
+}
+
+.goals-section {
+  margin-bottom: 24px;
+}
+
+.goal-display-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.goal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.goal-item:last-child {
+  border-bottom: none;
+}
+
+.goal-label {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.goal-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.goal-unit {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin-left: 4px;
+}
+
+.goal-note {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.text-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.custom-goals-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}

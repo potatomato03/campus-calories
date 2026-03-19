@@ -273,8 +273,8 @@ function setupEventListeners() {
     card.addEventListener('click', () => selectCategory(card.dataset.category));
   });
 
-  // Back buttons
-  document.querySelectorAll('.back-btn').forEach(btn => {
+  // Back buttons (only for modal sections, not screen navigation)
+  document.querySelectorAll('.modal .back-btn').forEach(btn => {
     btn.addEventListener('click', goBackToCategories);
   });
 
@@ -355,10 +355,10 @@ function setupOnboardingListeners() {
     });
   });
 
-  // Activity selection
-  document.querySelectorAll('.activity-option').forEach(opt => {
+  // Activity selection (onboarding only)
+  document.querySelectorAll('#activity-options .activity-option').forEach(opt => {
     opt.addEventListener('click', () => {
-      document.querySelectorAll('.activity-option').forEach(o => o.classList.remove('selected'));
+      document.querySelectorAll('#activity-options .activity-option').forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       AppState.tempProfile.activity = opt.dataset.activity;
     });
