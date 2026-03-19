@@ -240,3 +240,174 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+
+/* ========== Goals Screen New Styles ========== */
+.current-goals-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.goals-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.goals-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.goal-mode-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: white;
+}
+
+.goal-mode-badge.cutting {
+  background: #ef4444;
+}
+
+.goal-mode-badge.bulking {
+  background: #22c55e;
+}
+
+.goals-stats-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
+}
+
+.goals-stat {
+  text-align: center;
+}
+
+.goals-stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.goals-stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.goals-stat-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--color-gray-200);
+}
+
+.goals-note {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-gray-200);
+}
+
+/* Goal Info Cards */
+.goal-info-section {
+  margin-top: 24px;
+}
+
+.goal-info-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: white;
+  padding: 14px 16px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.goal-info-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.goal-info-content strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.goal-info-content p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Goal Edit Modal Styles */
+.goal-mode-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.goal-mode-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--color-gray-50);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.goal-mode-option:hover {
+  background: var(--color-gray-100);
+}
+
+.goal-mode-option.selected {
+  border-color: var(--color-primary);
+  background: rgba(0, 102, 238, 0.08);
+}
+
+.goal-mode-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.goal-mode-info {
+  flex: 1;
+}
+
+.goal-mode-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.goal-mode-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Screen content fix for analytics and goals */
+#analytics-screen .screen-content,
+#goals-screen .screen-content {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 60px);
+}

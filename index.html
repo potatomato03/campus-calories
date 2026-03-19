@@ -738,12 +738,12 @@
     <!-- Analytics Screen -->
     <div id="analytics-screen" class="screen hidden">
       <header class="app-header">
-        <button id="analytics-back-btn" class="icon-btn back-btn">←</button>
+        <button id="analytics-back-btn" class="icon-btn">←</button>
         <h1 class="header-title">Analytics & Streaks</h1>
         <div style="width: 44px;"></div>
       </header>
 
-      <div class="analytics-content">
+      <main class="screen-content" style="padding: 16px; background: var(--bg-secondary); flex: 1; overflow-y: auto;">
         <!-- Streak Card -->
         <div class="analytics-card streak-card">
           <div class="streak-icon">🔥</div>
@@ -754,8 +754,8 @@
         </div>
 
         <!-- Motivation Banner -->
-        <div class="motivation-banner" id="motivation-banner">
-          <p>📊 Continuously log your calories for 7 days to unlock badges and compete on leaderboards!</p>
+        <div class="motivation-banner">
+          <p>📊 Log your calories for 7 days straight to unlock badges and compete on leaderboards!</p>
         </div>
 
         <!-- Weekly Summary -->
@@ -779,99 +779,162 @@
         <div class="analytics-section">
           <h3 class="section-title">Achievements</h3>
           <div class="achievements-grid" id="achievements-container">
-            <div class="achievement-badge locked" id="badge-first-goal">
+            <div id="badge-first-goal" class="achievement-badge locked">
               <div class="badge-icon">🎯</div>
               <div class="badge-name">First Goal</div>
             </div>
-            <div class="achievement-badge locked" id="badge-streak-3">
+            <div id="badge-streak-3" class="achievement-badge locked">
               <div class="badge-icon">🔥</div>
               <div class="badge-name">3-Day Streak</div>
             </div>
-            <div class="achievement-badge locked" id="badge-streak-7">
+            <div id="badge-streak-7" class="achievement-badge locked">
               <div class="badge-icon">⭐</div>
               <div class="badge-name">7-Day Streak</div>
             </div>
+            <div id="badge-streak-30" class="achievement-badge locked">
+              <div class="badge-icon">🏆</div>
+              <div class="badge-name">30-Day Streak</div>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
 
     <!-- Goals Screen -->
     <div id="goals-screen" class="screen hidden">
       <header class="app-header">
-        <button id="goals-back-btn" class="icon-btn back-btn">←</button>
+        <button id="goals-back-btn" class="icon-btn">←</button>
         <h1 class="header-title">Your Goals</h1>
         <div style="width: 44px;"></div>
       </header>
 
-      <div class="goals-content" style="padding: 16px;">
-        <!-- Current Goal Mode -->
-        <div class="goals-section">
-          <h3 class="section-title" style="margin-bottom: 16px;">Goal Mode</h3>
-          <div class="activity-options" id="goals-mode-options">
-            <button class="activity-option" data-goal="cutting">
-              <div class="activity-icon">🔻</div>
-              <div class="activity-info">
-                <div class="activity-name">Cutting</div>
-                <div class="activity-desc">Lose fat, preserve muscle</div>
-              </div>
-            </button>
-            <button class="activity-option" data-goal="maintenance">
-              <div class="activity-icon">⚖️</div>
-              <div class="activity-info">
-                <div class="activity-name">Maintenance</div>
-                <div class="activity-desc">Stay at current weight</div>
-              </div>
-            </button>
-            <button class="activity-option" data-goal="bulking">
-              <div class="activity-icon">🔺</div>
-              <div class="activity-info">
-                <div class="activity-name">Bulking</div>
-                <div class="activity-desc">Build muscle, gain weight</div>
-              </div>
-            </button>
+      <main class="screen-content" style="padding: 16px; background: var(--bg-secondary); flex: 1; overflow-y: auto;">
+        <!-- Current Goals Summary -->
+        <div class="current-goals-card">
+          <div class="goals-card-header">
+            <h3>Current Daily Targets</h3>
+            <span id="current-goal-mode-badge" class="goal-mode-badge">Maintenance</span>
           </div>
-        </div>
-
-        <!-- Calculated Goals Display -->
-        <div class="goals-section" style="margin-top: 24px;">
-          <h3 class="section-title" style="margin-bottom: 16px;">Daily Targets</h3>
-          <div class="goal-display-card">
-            <div class="goal-item">
-              <span class="goal-label">Daily Calories</span>
-              <span id="goals-calories-display" class="goal-value">2,400</span>
-              <span class="goal-unit">kcal</span>
+          <div class="goals-stats-row">
+            <div class="goals-stat">
+              <div class="goals-stat-value" id="current-calorie-goal">2,000</div>
+              <div class="goals-stat-label">Calories</div>
             </div>
-            <div class="goal-item">
-              <span class="goal-label">Daily Protein</span>
-              <span id="goals-protein-display" class="goal-value">120</span>
-              <span class="goal-unit">g</span>
+            <div class="goals-stat-divider"></div>
+            <div class="goals-stat">
+              <div class="goals-stat-value" id="current-protein-goal">100</div>
+              <div class="goals-stat-label">Protein (g)</div>
             </div>
           </div>
-          <p id="goals-note-text" class="goal-note" style="text-align: center; margin-top: 12px; color: var(--color-text-secondary);">Based on your TDEE calculation</p>
+          <p class="goals-note" id="goals-description">Maintain your current weight with balanced nutrition.</p>
         </div>
 
-        <!-- Custom Goals Toggle -->
-        <div class="goals-section" style="margin-top: 24px;">
-          <div class="custom-goal-toggle" style="text-align: center;">
-            <button id="toggle-custom-goals-edit" class="text-link">Set custom goals</button>
+        <!-- Change Goal Button -->
+        <button id="change-goal-btn" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+          Change My Goal
+        </button>
+
+        <!-- Goal Info Cards -->
+        <div class="goal-info-section" style="margin-top: 24px;">
+          <h4 style="margin-bottom: 12px; color: var(--text-secondary);">Understanding Goals</h4>
+          <div class="goal-info-card">
+            <span class="goal-info-icon">🔻</span>
+            <div class="goal-info-content">
+              <strong>Cutting</strong>
+              <p>500 calorie deficit for fat loss while preserving muscle</p>
+            </div>
           </div>
-          <div id="custom-goals-edit-inputs" class="custom-goals-form hidden" style="margin-top: 16px;">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Custom Calories (kcal)</label>
-                <input type="number" id="edit-custom-calories" class="form-input" placeholder="e.g. 2000">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Custom Protein (g)</label>
-                <input type="number" id="edit-custom-protein" class="form-input" placeholder="e.g. 120">
-              </div>
+          <div class="goal-info-card">
+            <span class="goal-info-icon">⚖️</span>
+            <div class="goal-info-content">
+              <strong>Maintenance</strong>
+              <p>Stay at your current weight with balanced intake</p>
+            </div>
+          </div>
+          <div class="goal-info-card">
+            <span class="goal-info-icon">🔺</span>
+            <div class="goal-info-content">
+              <strong>Bulking</strong>
+              <p>300 calorie surplus for muscle building</p>
             </div>
           </div>
         </div>
+      </main>
+    </div>
 
-        <!-- Save Button -->
-        <button id="save-goals-btn" class="btn btn-primary" style="width: 100%; margin-top: 24px;">Save Goals</button>
+    <!-- Goal Edit Modal -->
+    <div id="goal-edit-modal" class="modal hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content" style="max-width: 400px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h2>Change Your Goal</h2>
+          <button class="modal-close">×</button>
+        </div>
+        <div class="modal-body" style="padding: 16px;">
+          <!-- Goal Mode Selection -->
+          <div class="goal-mode-selection">
+            <button class="goal-mode-option" data-goal="cutting">
+              <div class="goal-mode-icon">🔻</div>
+              <div class="goal-mode-info">
+                <div class="goal-mode-name">Cutting</div>
+                <div class="goal-mode-desc">Lose fat, preserve muscle</div>
+              </div>
+            </button>
+            <button class="goal-mode-option selected" data-goal="maintenance">
+              <div class="goal-mode-icon">⚖️</div>
+              <div class="goal-mode-info">
+                <div class="goal-mode-name">Maintenance</div>
+                <div class="goal-mode-desc">Stay at current weight</div>
+              </div>
+            </button>
+            <button class="goal-mode-option" data-goal="bulking">
+              <div class="goal-mode-icon">🔺</div>
+              <div class="goal-mode-info">
+                <div class="goal-mode-name">Bulking</div>
+                <div class="goal-mode-desc">Build muscle, gain weight</div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Calculated Goals Preview -->
+          <div class="goals-preview" style="margin-top: 20px; padding: 16px; background: var(--bg-secondary); border-radius: 12px;">
+            <div style="display: flex; justify-content: space-around; text-align: center;">
+              <div>
+                <div id="preview-calories" style="font-size: 24px; font-weight: 700; color: var(--color-primary);">2,000</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">Calories</div>
+              </div>
+              <div>
+                <div id="preview-protein" style="font-size: 24px; font-weight: 700; color: var(--color-accent);">100</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">Protein (g)</div>
+              </div>
+            </div>
+            <p id="preview-note" style="text-align: center; margin-top: 12px; font-size: 13px; color: var(--text-secondary);">Based on your TDEE</p>
+          </div>
+
+          <!-- Custom Goals Option -->
+          <div style="margin-top: 16px; text-align: center;">
+            <button id="toggle-custom-edit" style="background: none; border: none; color: var(--color-primary); font-size: 14px; cursor: pointer;">
+              Set custom values instead
+            </button>
+          </div>
+          <div id="custom-edit-fields" class="hidden" style="margin-top: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <label class="form-label">Calories</label>
+                <input type="number" id="custom-cal-input" class="form-input" placeholder="e.g. 2000">
+              </div>
+              <div>
+                <label class="form-label">Protein (g)</label>
+                <input type="number" id="custom-protein-input" class="form-input" placeholder="e.g. 120">
+              </div>
+            </div>
+          </div>
+
+          <!-- Save Button -->
+          <button id="save-new-goal-btn" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+            Save New Goal
+          </button>
+        </div>
       </div>
     </div>
 

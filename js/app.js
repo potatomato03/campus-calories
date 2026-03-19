@@ -545,75 +545,42 @@ function initGoalsScreen() {
   const profile = AppState.userProfile;
   if (!profile) return;
 
-  // Highlight current goal mode
-  const goalOptions = document.querySelectorAll('#goals-mode-options .activity-option');
-  goalOptions.forEach(opt => {
-    opt.classList.toggle('selected', opt.dataset.goal === profile.goalMode);
-  });
+  // Update displayed values in Goals Screen
+  const caloriesDisplay = document.getElementById('current-calorie-goal');
+  const proteinDisplay = document.getElementById('current-protein-goal');
+  const goalModeBadge = document.getElementById('current-goal-mode-badge');
+  const goalsDescription = document.getElementById('goals-description');
 
-  // Update displayed values
-  const caloriesDisplay = document.getElementById('goals-calories-display');
-  const proteinDisplay = document.getElementById('goals-protein-display');
-  const noteText = document.getElementById('goals-note-text');
+  const calories = profile.dailyCalorieGoal || profile.calculatedCalories || 2000;
+  const protein = profile.dailyProteinGoal || profile.calculatedProtein || 50;
 
   if (caloriesDisplay) {
-    caloriesDisplay.textContent = (profile.dailyCalorieGoal || profile.calculatedCalories || 2000).toLocaleString();
+    caloriesDisplay.textContent = calories.toLocaleString();
   }
   if (proteinDisplay) {
-    proteinDisplay.textContent = profile.dailyProteinGoal || profile.calculatedProtein || 50;
+    proteinDisplay.textContent = protein;
   }
 
-  // Update note
-  const notes = {
-    cutting: 'TDEE − 500 kcal for fat loss',
-    maintenance: 'Based on your TDEE calculation',
-    bulking: 'TDEE + 300 kcal for lean gains'
+  // Update goal mode badge
+  const goalMode = profile.goalMode || 'maintenance';
+  if (goalModeBadge) {
+    goalModeBadge.textContent = goalMode.charAt(0).toUpperCase() + goalMode.slice(1);
+    goalModeBadge.className = 'goal-mode-badge ' + goalMode;
+  }
+
+  // Update description
+  const descriptions = {
+    cutting: 'Lose fat while preserving muscle with a 500 calorie deficit.',
+    maintenance: 'Maintain your current weight with balanced nutrition.',
+    bulking: 'Build muscle with a 300 calorie surplus for lean gains.'
   };
-  if (noteText) {
-    noteText.textContent = notes[profile.goalMode] || notes.maintenance;
-  }
-
-  // Fill custom inputs if they exist
-  const customCalInput = document.getElementById('edit-custom-calories');
-  const customProteinInput = document.getElementById('edit-custom-protein');
-  if (customCalInput && profile.customCalories) {
-    customCalInput.value = profile.customCalories;
-  }
-  if (customProteinInput && profile.customProtein) {
-    customProteinInput.value = profile.customProtein;
+  if (goalsDescription) {
+    goalsDescription.textContent = descriptions[goalMode] || descriptions.maintenance;
   }
 }
 
 function setupGoalsScreenListeners() {
-  // Goal mode selection
-  const goalOptions = document.querySelectorAll('#goals-mode-options .activity-option');
-  goalOptions.forEach(opt => {
-    opt.addEventListener('click', () => {
-      goalOptions.forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
-      recalculateGoalsDisplay(opt.dataset.goal);
-    });
-  });
-
-  // Toggle custom goals
-  const toggleBtn = document.getElementById('toggle-custom-goals-edit');
-  const customInputs = document.getElementById('custom-goals-edit-inputs');
-  if (toggleBtn && customInputs) {
-    toggleBtn.addEventListener('click', () => {
-      customInputs.classList.toggle('hidden');
-      toggleBtn.textContent = customInputs.classList.contains('hidden')
-        ? 'Set custom goals'
-        : 'Use calculated goals';
-    });
-  }
-
-  // Save goals
-  const saveBtn = document.getElementById('save-goals-btn');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', saveGoals);
-  }
-
-  // Back button
+  // Back button for goals screen
   const backBtn = document.getElementById('goals-back-btn');
   if (backBtn) {
     backBtn.addEventListener('click', () => {
@@ -638,9 +605,88 @@ function setupGoalsScreenListeners() {
   if (streakBtn) {
     streakBtn.addEventListener('click', () => showScreen('analytics-screen'));
   }
+
+  // Change Goal button opens modal
+  const changeGoalBtn = document.getElementById('change-goal-btn');
+  const goalEditModal = document.getElementById('goal-edit-modal');
+  if (changeGoalBtn && goalEditModal) {
+    changeGoalBtn.addEventListener('click', () => {
+      openGoalEditModal();
+    });
+  }
+
+  // Goal mode selection in modal
+  const goalModeOptions = document.querySelectorAll('#goal-edit-modal .goal-mode-option');
+  goalModeOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      goalModeOptions.forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      updateGoalPreview(opt.dataset.goal);
+    });
+  });
+
+  // Toggle custom fields
+  const toggleCustomBtn = document.getElementById('toggle-custom-edit');
+  const customFields = document.getElementById('custom-edit-fields');
+  if (toggleCustomBtn && customFields) {
+    toggleCustomBtn.addEventListener('click', () => {
+      customFields.classList.toggle('hidden');
+      toggleCustomBtn.textContent = customFields.classList.contains('hidden')
+        ? 'Set custom values instead'
+        : 'Use calculated values';
+    });
+  }
+
+  // Save new goal button
+  const saveNewGoalBtn = document.getElementById('save-new-goal-btn');
+  if (saveNewGoalBtn) {
+    saveNewGoalBtn.addEventListener('click', saveGoalsFromModal);
+  }
+
+  // Modal close button
+  const modalClose = document.querySelector('#goal-edit-modal .modal-close');
+  if (modalClose) {
+    modalClose.addEventListener('click', closeGoalEditModal);
+  }
+
+  // Modal overlay click to close
+  const modalOverlay = document.querySelector('#goal-edit-modal .modal-overlay');
+  if (modalOverlay) {
+    modalOverlay.addEventListener('click', closeGoalEditModal);
+  }
 }
 
-function recalculateGoalsDisplay(goalMode) {
+function openGoalEditModal() {
+  const modal = document.getElementById('goal-edit-modal');
+  if (!modal) return;
+
+  const profile = AppState.userProfile;
+  const currentGoalMode = profile?.goalMode || 'maintenance';
+
+  // Highlight current goal mode
+  const goalModeOptions = document.querySelectorAll('#goal-edit-modal .goal-mode-option');
+  goalModeOptions.forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.goal === currentGoalMode);
+  });
+
+  // Update preview with current values
+  updateGoalPreview(currentGoalMode);
+
+  // Reset custom fields
+  const customFields = document.getElementById('custom-edit-fields');
+  const toggleCustomBtn = document.getElementById('toggle-custom-edit');
+  if (customFields) customFields.classList.add('hidden');
+  if (toggleCustomBtn) toggleCustomBtn.textContent = 'Set custom values instead';
+
+  modal.classList.remove('hidden');
+}
+
+function closeGoalEditModal() {
+  const modal = document.getElementById('goal-edit-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function updateGoalPreview(goalMode) {
   const profile = AppState.userProfile;
   if (!profile) return;
 
@@ -664,31 +710,31 @@ function recalculateGoalsDisplay(goalMode) {
 
   const proteinGoal = Math.round(profile.weight * (TDEE_CONSTANTS.proteinPerKg[goalMode] || 1.0));
 
-  // Update display
-  const caloriesDisplay = document.getElementById('goals-calories-display');
-  const proteinDisplay = document.getElementById('goals-protein-display');
-  const noteText = document.getElementById('goals-note-text');
+  // Update preview display
+  const previewCalories = document.getElementById('preview-calories');
+  const previewProtein = document.getElementById('preview-protein');
+  const previewNote = document.getElementById('preview-note');
 
-  if (caloriesDisplay) caloriesDisplay.textContent = adjustedCalories.toLocaleString();
-  if (proteinDisplay) proteinDisplay.textContent = proteinGoal;
+  if (previewCalories) previewCalories.textContent = adjustedCalories.toLocaleString();
+  if (previewProtein) previewProtein.textContent = proteinGoal;
 
   const notes = {
-    cutting: `TDEE (${tdee.toLocaleString()}) − 500 kcal for fat loss`,
+    cutting: `TDEE (${tdee.toLocaleString()}) − 500 kcal`,
     maintenance: 'Based on your TDEE calculation',
-    bulking: `TDEE (${tdee.toLocaleString()}) + 300 kcal for lean gains`
+    bulking: `TDEE (${tdee.toLocaleString()}) + 300 kcal`
   };
-  if (noteText) noteText.textContent = notes[goalMode] || notes.maintenance;
+  if (previewNote) previewNote.textContent = notes[goalMode] || notes.maintenance;
 }
 
-async function saveGoals() {
-  const selectedGoal = document.querySelector('#goals-mode-options .activity-option.selected');
+async function saveGoalsFromModal() {
+  const selectedGoal = document.querySelector('#goal-edit-modal .goal-mode-option.selected');
   const goalMode = selectedGoal?.dataset.goal || 'maintenance';
 
-  const customInputs = document.getElementById('custom-goals-edit-inputs');
-  const isCustom = customInputs && !customInputs.classList.contains('hidden');
+  const customFields = document.getElementById('custom-edit-fields');
+  const isCustom = customFields && !customFields.classList.contains('hidden');
 
-  const customCalories = isCustom ? parseInt(document.getElementById('edit-custom-calories')?.value) : null;
-  const customProtein = isCustom ? parseInt(document.getElementById('edit-custom-protein')?.value) : null;
+  const customCalories = isCustom ? parseInt(document.getElementById('custom-cal-input')?.value) : null;
+  const customProtein = isCustom ? parseInt(document.getElementById('custom-protein-input')?.value) : null;
 
   // Recalculate based on new goal mode
   const profile = AppState.userProfile;
@@ -725,8 +771,9 @@ async function saveGoals() {
   // Sync to cloud
   syncProfileToCloud(updatedProfile).catch(() => {});
 
+  closeGoalEditModal();
+  initGoalsScreen(); // Refresh goals screen display
   showToast('Goals updated successfully!', 'success');
-  showScreen('dashboard-screen');
   updateProgressRings();
 }
 
