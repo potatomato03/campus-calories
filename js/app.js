@@ -304,22 +304,28 @@ function setupEventListeners() {
 
   // Side Menu Items
   setupSideMenuListeners();
+
+  // Goals screen
+  setupGoalsScreenListeners();
 }
 
 // ==================== NAVIGATION ====================
 function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(s => {
     // Only hide top level screens
-    if (['auth-screen', 'onboarding-screen', 'dashboard-screen', 'analytics-screen'].includes(s.id)) {
+    if (['auth-screen', 'onboarding-screen', 'dashboard-screen', 'analytics-screen', 'goals-screen'].includes(s.id)) {
       s.classList.add('hidden');
     }
   });
-  
+
   document.getElementById(screenId)?.classList.remove('hidden');
 
   // specific initializers
   if (screenId === 'analytics-screen' && typeof initAnalytics === 'function') {
     initAnalytics();
+  }
+  if (screenId === 'goals-screen') {
+    initGoalsScreen();
   }
 
   // Close menu if open
@@ -443,6 +449,12 @@ function calculateGoals() {
   const { gender, weight, height, age, activity } = AppState.tempProfile;
   const goalMode = AppState.tempProfile.goalMode || 'maintenance';
 
+  // Validate required fields to prevent NaN
+  if (!weight || !height || !age || !activity || !gender) {
+    console.warn('Missing profile data for TDEE calculation');
+    return;
+  }
+
   // BMR Calculation (Mifflin-St Jeor equation)
   let bmr;
   if (gender === 'male') {
@@ -452,7 +464,8 @@ function calculateGoals() {
   }
 
   // TDEE = BMR × Activity Factor
-  const tdee = Math.round(bmr * TDEE_CONSTANTS.activityMultipliers[activity]);
+  const activityMultiplier = TDEE_CONSTANTS.activityMultipliers[activity] || 1.55;
+  const tdee = Math.round(bmr * activityMultiplier);
 
   // Apply goal-based calorie adjustment
   let adjustedCalories = tdee + (TDEE_CONSTANTS.goalCalorieAdjustment[goalMode] || 0);
@@ -525,6 +538,196 @@ async function completeOnboardingFlow() {
 
   showDashboard();
   showToast('Welcome to Campus Calories!', 'success');
+}
+
+// ==================== GOALS SCREEN ====================
+function initGoalsScreen() {
+  const profile = AppState.userProfile;
+  if (!profile) return;
+
+  // Highlight current goal mode
+  const goalOptions = document.querySelectorAll('#goals-mode-options .activity-option');
+  goalOptions.forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.goal === profile.goalMode);
+  });
+
+  // Update displayed values
+  const caloriesDisplay = document.getElementById('goals-calories-display');
+  const proteinDisplay = document.getElementById('goals-protein-display');
+  const noteText = document.getElementById('goals-note-text');
+
+  if (caloriesDisplay) {
+    caloriesDisplay.textContent = (profile.dailyCalorieGoal || profile.calculatedCalories || 2000).toLocaleString();
+  }
+  if (proteinDisplay) {
+    proteinDisplay.textContent = profile.dailyProteinGoal || profile.calculatedProtein || 50;
+  }
+
+  // Update note
+  const notes = {
+    cutting: 'TDEE − 500 kcal for fat loss',
+    maintenance: 'Based on your TDEE calculation',
+    bulking: 'TDEE + 300 kcal for lean gains'
+  };
+  if (noteText) {
+    noteText.textContent = notes[profile.goalMode] || notes.maintenance;
+  }
+
+  // Fill custom inputs if they exist
+  const customCalInput = document.getElementById('edit-custom-calories');
+  const customProteinInput = document.getElementById('edit-custom-protein');
+  if (customCalInput && profile.customCalories) {
+    customCalInput.value = profile.customCalories;
+  }
+  if (customProteinInput && profile.customProtein) {
+    customProteinInput.value = profile.customProtein;
+  }
+}
+
+function setupGoalsScreenListeners() {
+  // Goal mode selection
+  const goalOptions = document.querySelectorAll('#goals-mode-options .activity-option');
+  goalOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      goalOptions.forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      recalculateGoalsDisplay(opt.dataset.goal);
+    });
+  });
+
+  // Toggle custom goals
+  const toggleBtn = document.getElementById('toggle-custom-goals-edit');
+  const customInputs = document.getElementById('custom-goals-edit-inputs');
+  if (toggleBtn && customInputs) {
+    toggleBtn.addEventListener('click', () => {
+      customInputs.classList.toggle('hidden');
+      toggleBtn.textContent = customInputs.classList.contains('hidden')
+        ? 'Set custom goals'
+        : 'Use calculated goals';
+    });
+  }
+
+  // Save goals
+  const saveBtn = document.getElementById('save-goals-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', saveGoals);
+  }
+
+  // Back button
+  const backBtn = document.getElementById('goals-back-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      showScreen('dashboard-screen');
+    });
+  }
+
+  // Analytics back button
+  const analyticsBackBtn = document.getElementById('analytics-back-btn');
+  if (analyticsBackBtn) {
+    analyticsBackBtn.addEventListener('click', () => {
+      showScreen('dashboard-screen');
+    });
+  }
+
+  // Header quick access buttons
+  const goalsBtn = document.getElementById('goals-btn');
+  const streakBtn = document.getElementById('streak-btn');
+  if (goalsBtn) {
+    goalsBtn.addEventListener('click', () => showScreen('goals-screen'));
+  }
+  if (streakBtn) {
+    streakBtn.addEventListener('click', () => showScreen('analytics-screen'));
+  }
+}
+
+function recalculateGoalsDisplay(goalMode) {
+  const profile = AppState.userProfile;
+  if (!profile) return;
+
+  // Get activity multiplier
+  const activityMultiplier = TDEE_CONSTANTS.activityMultipliers[profile.activity] || 1.55;
+
+  // Recalculate BMR and TDEE
+  let bmr;
+  if (profile.gender === 'male') {
+    bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age) + TDEE_CONSTANTS.bmrMaleMultiplier;
+  } else {
+    bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age) + TDEE_CONSTANTS.bmrFemaleMultiplier;
+  }
+
+  const tdee = Math.round(bmr * activityMultiplier);
+  let adjustedCalories = tdee + (TDEE_CONSTANTS.goalCalorieAdjustment[goalMode] || 0);
+
+  // Enforce minimum
+  const minCal = TDEE_CONSTANTS.minCalories[profile.gender] || 1200;
+  adjustedCalories = Math.max(adjustedCalories, minCal);
+
+  const proteinGoal = Math.round(profile.weight * (TDEE_CONSTANTS.proteinPerKg[goalMode] || 1.0));
+
+  // Update display
+  const caloriesDisplay = document.getElementById('goals-calories-display');
+  const proteinDisplay = document.getElementById('goals-protein-display');
+  const noteText = document.getElementById('goals-note-text');
+
+  if (caloriesDisplay) caloriesDisplay.textContent = adjustedCalories.toLocaleString();
+  if (proteinDisplay) proteinDisplay.textContent = proteinGoal;
+
+  const notes = {
+    cutting: `TDEE (${tdee.toLocaleString()}) − 500 kcal for fat loss`,
+    maintenance: 'Based on your TDEE calculation',
+    bulking: `TDEE (${tdee.toLocaleString()}) + 300 kcal for lean gains`
+  };
+  if (noteText) noteText.textContent = notes[goalMode] || notes.maintenance;
+}
+
+async function saveGoals() {
+  const selectedGoal = document.querySelector('#goals-mode-options .activity-option.selected');
+  const goalMode = selectedGoal?.dataset.goal || 'maintenance';
+
+  const customInputs = document.getElementById('custom-goals-edit-inputs');
+  const isCustom = customInputs && !customInputs.classList.contains('hidden');
+
+  const customCalories = isCustom ? parseInt(document.getElementById('edit-custom-calories')?.value) : null;
+  const customProtein = isCustom ? parseInt(document.getElementById('edit-custom-protein')?.value) : null;
+
+  // Recalculate based on new goal mode
+  const profile = AppState.userProfile;
+  const activityMultiplier = TDEE_CONSTANTS.activityMultipliers[profile.activity] || 1.55;
+
+  let bmr;
+  if (profile.gender === 'male') {
+    bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age) + TDEE_CONSTANTS.bmrMaleMultiplier;
+  } else {
+    bmr = (10 * profile.weight) + (6.25 * profile.height) - (5 * profile.age) + TDEE_CONSTANTS.bmrFemaleMultiplier;
+  }
+
+  const tdee = Math.round(bmr * activityMultiplier);
+  let adjustedCalories = tdee + (TDEE_CONSTANTS.goalCalorieAdjustment[goalMode] || 0);
+  const minCal = TDEE_CONSTANTS.minCalories[profile.gender] || 1200;
+  adjustedCalories = Math.max(adjustedCalories, minCal);
+  const proteinGoal = Math.round(profile.weight * (TDEE_CONSTANTS.proteinPerKg[goalMode] || 1.0));
+
+  // Update profile
+  const updatedProfile = {
+    ...profile,
+    goalMode,
+    dailyCalorieGoal: (isCustom && customCalories) ? customCalories : adjustedCalories,
+    dailyProteinGoal: (isCustom && customProtein) ? customProtein : proteinGoal,
+    customCalories: customCalories || null,
+    customProtein: customProtein || null,
+    calculatedCalories: tdee,
+    calculatedProtein: proteinGoal
+  };
+
+  await saveUserProfile(updatedProfile);
+  AppState.userProfile = updatedProfile;
+
+  // Sync to cloud
+  syncProfileToCloud(updatedProfile).catch(() => {});
+
+  showToast('Goals updated successfully!', 'success');
+  showScreen('dashboard-screen');
+  updateProgressRings();
 }
 
 // ==================== DASHBOARD ====================
@@ -1928,10 +2131,10 @@ function setupSideMenuListeners() {
       } else if (view === 'analytics') {
         showScreen('analytics-screen');
         if (typeof initAnalytics === 'function') initAnalytics();
-      } else {
-        // Placeholder for history/goals
-        console.log('Navigate to', view);
-        showToast(`${view.charAt(0).toUpperCase() + view.slice(1)} coming soon!`);
+      } else if (view === 'goals') {
+        showScreen('goals-screen');
+      } else if (view === 'history') {
+        showToast('History coming soon!');
       }
 
       toggleSideMenu(); // Close menu
