@@ -5,7 +5,7 @@
 
 const SUPABASE_URL = 'https://mdlyfncfsricxlvuiqej.supabase.co';
 // Get this from: Supabase Dashboard > Settings > API > Project API Keys > anon/public
-const SUPABASE_ANON_KEY = 'sb_publishable_P6Hg4MJt0oneW4ItHpvfnw_K9lvxE_5';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kbHlmbmNmc3JpY3hsdnVpcWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3ODg1NjcsImV4cCI6MjA4OTM2NDU2N30.BxymTI7FeTtXsKvJKoBydXxGJISLmN4E2FP0Tk9muaM';
 
 let supabaseClient = null;
 

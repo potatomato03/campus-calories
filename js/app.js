@@ -69,6 +69,9 @@ async function initApp() {
     cacheDOMElements();
     setupEventListeners();
 
+    // Setup auth listener BEFORE checking session - critical for OAuth callbacks
+    setupAuthListener();
+
     // Check auth state
     const session = await getAuthSession();
     if (session) {
@@ -93,7 +96,6 @@ async function initApp() {
     }
 
     await initializeMessMenuData();
-    setupAuthListener();
 
     console.log('App initialized successfully');
   } catch (error) {
