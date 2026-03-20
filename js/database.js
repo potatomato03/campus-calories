@@ -4,13 +4,14 @@
  */
 
 const DB_NAME = 'CampusCaloriesDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const STORES = {
   USER_PROFILE: 'userProfile',
   FOOD_LOG: 'foodLog',
   PACKAGED_CACHE: 'packagedCache',
-  SETTINGS: 'settings'
+  SETTINGS: 'settings',
+  SYNC_QUEUE: 'syncQueue'
 };
 
 let db = null;
@@ -57,8 +58,33 @@ async function initDatabase() {
       if (!database.objectStoreNames.contains(STORES.SETTINGS)) {
         database.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
       }
+
+      // Sync Queue Store
+      if (!database.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
+        database.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id', autoIncrement: true });
+      }
     };
   });
+}
+
+// Sync Operations
+async function addToSyncQueue(action, payload) {
+  if (!db) return;
+  return await putInStore(STORES.SYNC_QUEUE, {
+    action,
+    payload,
+    timestamp: new Date().toISOString()
+  });
+}
+
+async function getSyncQueue() {
+  if (!db) return [];
+  return await getAllFromStore(STORES.SYNC_QUEUE);
+}
+
+async function removeFromSyncQueue(id) {
+  if (!db) return;
+  return await deleteFromStore(STORES.SYNC_QUEUE, id);
 }
 
 // Generic CRUD Operations
@@ -115,6 +141,14 @@ async function saveUserProfile(profile) {
   profile.id = 'current';
   profile.updatedAt = new Date().toISOString();
   await putInStore(STORES.USER_PROFILE, profile);
+
+  if (navigator.onLine && typeof syncProfileToCloud === 'function') {
+    syncProfileToCloud(profile).catch(() => {
+      addToSyncQueue('UPDATE_PROFILE', profile).catch(() => {});
+    });
+  } else {
+    addToSyncQueue('UPDATE_PROFILE', profile).catch(() => {});
+  }
 }
 
 // Food Log Operations
@@ -122,9 +156,12 @@ async function addFoodEntry(entry) {
   entry.timestamp = new Date().toISOString();
   const id = await putInStore(STORES.FOOD_LOG, entry);
 
-  // Cloud sync (fire and forget — offline-first)
-  if (typeof syncFoodEntryToCloud === 'function') {
-    syncFoodEntryToCloud(entry).catch(() => {});
+  if (navigator.onLine && typeof syncFoodEntryToCloud === 'function') {
+    syncFoodEntryToCloud(entry).catch(() => {
+      addToSyncQueue('ADD_FOOD', entry).catch(() => {});
+    });
+  } else {
+    addToSyncQueue('ADD_FOOD', entry).catch(() => {});
   }
 
   return id;

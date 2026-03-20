@@ -19,7 +19,7 @@ const AppState = {
   riceGrams: 250,
   onboardingStep: 1,
   tempProfile: { goalMode: 'maintenance' },
-  geminiApiKey: null,
+  nvidiaApiKey: null,
   authUser: null
 };
 
@@ -92,7 +92,7 @@ async function initApp() {
       showScreen('dashboard-screen');
       await loadDailyLog();
       // Load API Key
-      AppState.geminiApiKey = await getSetting('geminiApiKey');
+      AppState.nvidiaApiKey = await getSetting('nvidiaApiKey');
     }
 
     await initializeMessMenuData();
@@ -138,7 +138,7 @@ function cacheDOMElements() {
   // Settings
   DOM.settingsScreen = document.getElementById('settings-screen');
   DOM.settingsBackBtn = document.getElementById('settings-back-btn');
-  DOM.geminiApiKeyInput = document.getElementById('gemini-api-key');
+  DOM.nvidiaApiKeyInput = document.getElementById('nvidia-api-key');
   DOM.saveApiKeyBtn = document.getElementById('save-api-key');
   DOM.apiKeyStatus = document.getElementById('api-key-status');
 
@@ -1821,73 +1821,9 @@ function showCustomSelection() {
   document.getElementById('ai-meal-description').value = '';
 }
 
-// AI Meal Calorie Estimation Database
-const AI_FOOD_DATABASE = {
-  // Indian Breads
-  'chapati': { calories: 120, protein: 3, carbs: 20, fat: 2.8, weight: 40 },
-  'roti': { calories: 120, protein: 3, carbs: 20, fat: 2.8, weight: 40 },
-  'paratha': { calories: 210, protein: 4.5, carbs: 28, fat: 9.5, weight: 80 },
-  'naan': { calories: 260, protein: 6, carbs: 42, fat: 8, weight: 80 },
-  'dosa': { calories: 85, protein: 2, carbs: 16, fat: 1, weight: 40 },
-  'idli': { calories: 39, protein: 1.6, carbs: 8, fat: 0.2, weight: 40 },
-  'poori': { calories: 80, protein: 1.5, carbs: 10, fat: 4, weight: 25 },
-
-  // Rice Items
-  'rice': { calories: 130, protein: 2.7, carbs: 28, fat: 0.3, weight: 100 },
-  'fried rice': { calories: 180, protein: 4.2, carbs: 28, fat: 6.5, weight: 100 },
-  'biryani': { calories: 160, protein: 4.5, carbs: 26, fat: 5, weight: 100 },
-  'pulao': { calories: 135, protein: 3, carbs: 25, fat: 3, weight: 100 },
-
-  // Dal & Curries
-  'dal': { calories: 116, protein: 7, carbs: 18, fat: 2.5, weight: 100 },
-  'sambar': { calories: 65, protein: 3.5, carbs: 10, fat: 1.5, weight: 100 },
-  'curry': { calories: 110, protein: 3, carbs: 10, fat: 6, weight: 100 },
-  'chole': { calories: 140, protein: 8.9, carbs: 19, fat: 4, weight: 100 },
-  'rajma': { calories: 127, protein: 8.7, carbs: 17, fat: 3.5, weight: 100 },
-  'paneer': { calories: 265, protein: 18, carbs: 6, fat: 20, weight: 100 },
-
-  // Eggs
-  'egg': { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, weight: 50 },
-  'omelette': { calories: 165, protein: 11, carbs: 2, fat: 12, weight: 100 },
-  'boiled egg': { calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3, weight: 50 },
-
-  // Chicken
-  'chicken': { calories: 165, protein: 31, carbs: 0, fat: 3.6, weight: 100 },
-  'grilled chicken': { calories: 165, protein: 31, carbs: 0, fat: 3.6, weight: 100 },
-  'chicken curry': { calories: 180, protein: 20, carbs: 5, fat: 9, weight: 100 },
-  'butter chicken': { calories: 250, protein: 18, carbs: 8, fat: 16, weight: 100 },
-
-  // Vegetables
-  'vegetable': { calories: 95, protein: 3, carbs: 12, fat: 4, weight: 100 },
-  'salad': { calories: 25, protein: 1, carbs: 5, fat: 0.2, weight: 50 },
-
-  // Snacks
-  'samosa': { calories: 150, protein: 3.5, carbs: 18, fat: 7.5, weight: 50 },
-  'pakora': { calories: 145, protein: 3, carbs: 16, fat: 8, weight: 80 },
-
-  // Western Foods
-  'sandwich': { calories: 250, protein: 12, carbs: 28, fat: 10, weight: 150 },
-  'burger': { calories: 295, protein: 17, carbs: 30, fat: 14, weight: 200 },
-  'pizza': { calories: 266, protein: 11, carbs: 33, fat: 10, weight: 100 },
-  'fries': { calories: 312, protein: 3.4, carbs: 41, fat: 15, weight: 100 },
-  'pasta': { calories: 220, protein: 8, carbs: 28, fat: 9, weight: 200 },
-
-  // Beverages
-  'tea': { calories: 70, protein: 2, carbs: 10, fat: 2, weight: 150 },
-  'coffee': { calories: 60, protein: 2, carbs: 8, fat: 2, weight: 150 },
-  'milk': { calories: 100, protein: 4.3, carbs: 5, fat: 6.5, weight: 100 },
-  'juice': { calories: 45, protein: 0.5, carbs: 11, fat: 0, weight: 100 },
-
-  // Sweets
-  'kheer': { calories: 165, protein: 5, carbs: 25, fat: 5.5, weight: 100 },
-  'halwa': { calories: 200, protein: 3, carbs: 28, fat: 9, weight: 80 },
-  'gulab jamun': { calories: 150, protein: 2, carbs: 25, fat: 5, weight: 50 },
-  'ice cream': { calories: 200, protein: 3, carbs: 24, fat: 10, weight: 100 }
-};
-
 // ==================== SETTINGS ====================
 function setupSettingsListeners() {
-  DOM.saveApiKeyBtn?.addEventListener('click', saveGeminiApiKey);
+  DOM.saveApiKeyBtn?.addEventListener('click', saveNvidiaApiKey);
 
   // Back button
   DOM.settingsBackBtn?.addEventListener('click', () => {
@@ -1896,21 +1832,21 @@ function setupSettingsListeners() {
   });
 
   // Check saved key on load
-  if (DOM.geminiApiKeyInput && AppState.geminiApiKey) {
-    DOM.geminiApiKeyInput.value = AppState.geminiApiKey;
+  if (DOM.nvidiaApiKeyInput && AppState.nvidiaApiKey) {
+    DOM.nvidiaApiKeyInput.value = AppState.nvidiaApiKey;
   }
 }
 
-async function saveGeminiApiKey() {
-  const key = DOM.geminiApiKeyInput?.value.trim();
+async function saveNvidiaApiKey() {
+  const key = DOM.nvidiaApiKeyInput?.value.trim();
   if (!key) {
     showToast('Please enter an API Key', 'error');
     return;
   }
 
   try {
-    await setSetting('geminiApiKey', key);
-    AppState.geminiApiKey = key;
+    await setSetting('nvidiaApiKey', key);
+    AppState.nvidiaApiKey = key;
 
     if (DOM.apiKeyStatus) {
       DOM.apiKeyStatus.textContent = 'API Key saved successfully!';
@@ -1923,6 +1859,32 @@ async function saveGeminiApiKey() {
   }
 }
 
+function buildRAGContext() {
+  let contextParts = [];
+  contextParts.push("Local Campus Nutrition Database:");
+  
+  if (typeof getAllNutritionData === 'function') {
+    const allData = getAllNutritionData();
+    Object.entries(allData).forEach(([key, item]) => {
+      if (item && item.name) {
+        const amount = item.weight || item.defaultGrams || item.defaultMl || 100;
+        contextParts.push(`- ${item.name}: ${item.calories} kcal, ${item.protein}g protein, ${item.carbs || 0}g carbs, ${item.fat || 0}g fat (per ${amount}g/ml/pc)`);
+      }
+    });
+  }
+
+  if (typeof getAllAncCategories === 'function') {
+    contextParts.push("\n[ANC Menu Items]");
+    getAllAncCategories().forEach(cat => {
+      getAncItems(cat).forEach(item => {
+        contextParts.push(`- ${item.name}: ${item.calories} kcal, ${item.protein}g protein, ${item.carbs || 0}g carbs, ${item.fat || 0}g fat (per ${item.weight || 100}g)`);
+      });
+    });
+  }
+  
+  return contextParts.join('\n');
+}
+
 // AI Calorie Estimation Function
 async function estimateMealCalories() {
   const description = document.getElementById('ai-meal-description')?.value.trim();
@@ -1931,19 +1893,13 @@ async function estimateMealCalories() {
     return;
   }
 
-  // Check for API Key
-  if (!AppState.geminiApiKey) {
-    if (confirm('Gemini API Key is missing. Would you like to add it in Settings for better accuracy?')) {
-      showSettings();
-      closeAllModals();
-      return;
-    }
-    // Fallback to local
-    console.warn('Gemini API Key missing, falling back to local');
-    const result = parseMealDescription(description);
-    displayAIResult(result, description);
-    return;
-  }
+  const errorEl = document.getElementById('ai-error-message');
+  const resultEl = document.getElementById('ai-result');
+  if (errorEl) errorEl.classList.add('hidden');
+  if (resultEl) resultEl.classList.add('hidden');
+
+  // Use AppState key or user provided hardcoded key as fallback
+  const apiKey = AppState.nvidiaApiKey || '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';
 
   const btn = document.getElementById('ai-estimate-btn');
   const originalText = btn.innerHTML;
@@ -1951,24 +1907,25 @@ async function estimateMealCalories() {
   btn.disabled = true;
 
   try {
-    console.log('Calling Gemini API...');
-    const result = await callGeminiAPI(description);
-    console.log('Gemini API result:', result);
+    console.log('Building context for LLM...');
+    const contextData = buildRAGContext();
+    
+    console.log('Calling NVIDIA API...');
+    const result = await callNvidiaAPI(description, contextData, apiKey);
+    console.log('NVIDIA API result:', result);
 
-    // Validate result structure
     if (!result || typeof result.calories !== 'number') {
       throw new Error('Invalid response format from AI');
     }
 
     displayAIResult(result, description);
-    showToast('Estimated using Gemini AI', 'success');
+    showToast('Estimation generated', 'success');
   } catch (error) {
     console.error('AI Estimation failed:', error);
-    showToast(`AI Error: ${error.message}. Using basic estimator.`, 'error');
-
-    // Fallback to local on error, but notify user
-    const result = parseMealDescription(description);
-    displayAIResult(result, description);
+    if (errorEl) {
+      errorEl.textContent = `AI Estimation Failed: ${error.message}`;
+      errorEl.classList.remove('hidden');
+    }
   } finally {
     btn.innerHTML = originalText;
     btn.disabled = false;
@@ -1979,25 +1936,39 @@ function showSettings() {
   showScreen('settings-screen');
 }
 
-async function callGeminiAPI(description) {
-  const API_KEY = AppState.geminiApiKey;
-  const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+async function callNvidiaAPI(description, contextData, apiKey) {
+  // Use our local Python proxy to bypass browser CORS blocks on NVIDIA's API
+  const URL = '/api/nvidia';
 
-  const prompt = `
-    Analyze the following meal description and provide nutritional information (calories, protein in grams, carbs in grams, fat in grams).
-    Return ONLY a valid JSON object with keys: "calories", "protein", "carbs", "fat".
-    Do not wrap in markdown code blocks.
-    
-    Meal: "${description}"
-  `;
+  const systemPrompt = `You are an expert nutritionist algorithm for Campus Calories.
+Evaluate the user's food description against the provided local nutrition database and categorize into one of three tiers:
+1) "Exact Local Match": The food exists exactly in the local database. Use those exact macros.
+2) "Local Educated Guess": Exact food is missing, but similar local items exist. Base estimates on closest local items.
+3) "AI General Knowledge": Food is completely foreign. Use your internal knowledge to estimate.
+
+Return ONLY a strictly valid JSON object. Do NOT wrap in markdown code blocks.
+The schema MUST be exactly:
+{"calories": number, "protein": number, "carbs": number, "fat": number, "estimation_type": "Exact Local Match" | "Local Educated Guess" | "AI General Knowledge", "explanation": "Brief 1-sentence reasoning"}
+
+[CAMPUS FOOD CONTEXT]
+${contextData}`;
 
   const response = await fetch(URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
     body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }]
+      model: "meta/llama-3.3-70b-instruct",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Meal: "${description}"` }
+      ],
+      temperature: 0.1,
+      top_p: 0.7,
+      max_tokens: 1024,
+      stream: false
     })
   });
 
@@ -2007,10 +1978,10 @@ async function callGeminiAPI(description) {
   }
 
   const data = await response.json();
-  const text = data.candidates[0].content.parts[0].text;
+  const text = data.choices[0].message.content;
 
   // Clean potential markdown
-  const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
   return JSON.parse(cleanText);
 }
 
@@ -2018,88 +1989,26 @@ function displayAIResult(result, description) {
   // Display results
   document.getElementById('ai-calories').textContent = Math.round(result.calories);
   document.getElementById('ai-protein').textContent = Math.round(result.protein) + 'g';
-  document.getElementById('ai-carbs').textContent = Math.round(result.carbs) + 'g';
-  document.getElementById('ai-fat').textContent = Math.round(result.fat) + 'g';
+  document.getElementById('ai-carbs').textContent = Math.round(result.carbs || 0) + 'g';
+  document.getElementById('ai-fat').textContent = Math.round(result.fat || 0) + 'g';
+
+  const badge = document.getElementById('ai-estimation-badge');
+  const explanation = document.getElementById('ai-estimation-explanation');
+  
+  if (badge && result.estimation_type) badge.textContent = result.estimation_type;
+  if (explanation && result.explanation) explanation.textContent = result.explanation;
 
   // Store for adding to log
   AppState.aiEstimate = result;
-  AppState.aiEstimate.name = description.substring(0, 50) + (description.length > 50 ? '...' : '') + ' (AI)';
+  
+  const estType = result.estimation_type || 'AI Estimate';
+  const cleanDesc = description.substring(0, 40) + (description.length > 40 ? '...' : '');
+  AppState.aiEstimate.name = `${cleanDesc} [${estType}]`;
 
   document.getElementById('ai-result')?.classList.remove('hidden');
 }
 
-function parseMealDescription(description) {
-  let totalCalories = 0;
-  let totalProtein = 0;
-  let totalCarbs = 0;
-  let totalFat = 0;
 
-  // Extract quantities and food items
-  const words = description.split(/\s+/);
-
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i];
-
-    // Check for numbers (quantities)
-    const quantity = parseInt(word);
-    if (!isNaN(quantity) && quantity > 0 && quantity < 20) {
-      // Look for food item in next words
-      for (let j = i + 1; j < Math.min(i + 4, words.length); j++) {
-        const foodName = words.slice(i + 1, j + 1).join(' ');
-        const foodData = findFoodInDatabase(foodName);
-
-        if (foodData) {
-          totalCalories += foodData.calories * quantity;
-          totalProtein += foodData.protein * quantity;
-          totalCarbs += foodData.carbs * quantity;
-          totalFat += foodData.fat * quantity;
-          break;
-        }
-      }
-    } else {
-      // Check single word
-      const foodData = findFoodInDatabase(word);
-      if (foodData) {
-        totalCalories += foodData.calories;
-        totalProtein += foodData.protein;
-        totalCarbs += foodData.carbs;
-        totalFat += foodData.fat;
-      }
-    }
-  }
-
-  // If no food found, provide a generic estimate
-  if (totalCalories === 0) {
-    // Generic meal estimate based on description length as a proxy
-    totalCalories = 400;
-    totalProtein = 15;
-    totalCarbs = 50;
-    totalFat = 15;
-  }
-
-  return {
-    calories: Math.round(totalCalories),
-    protein: Math.round(totalProtein * 10) / 10,
-    carbs: Math.round(totalCarbs * 10) / 10,
-    fat: Math.round(totalFat * 10) / 10
-  };
-}
-
-function findFoodInDatabase(foodName) {
-  // Direct match
-  if (AI_FOOD_DATABASE[foodName]) {
-    return AI_FOOD_DATABASE[foodName];
-  }
-
-  // Partial match
-  for (const [key, value] of Object.entries(AI_FOOD_DATABASE)) {
-    if (foodName.includes(key) || key.includes(foodName)) {
-      return value;
-    }
-  }
-
-  return null;
-}
 
 async function addAIEstimateToLog() {
   if (!AppState.aiEstimate) {

@@ -172,6 +172,8 @@ function setupAuthListener() {
       AppState.authUser = session.user;
       await syncProfileFromCloud(session.user.id);
       
+      if (typeof processSyncQueue === 'function') processSyncQueue();
+      
       // Navigate to app if coming from auth screen
       if (document.getElementById('auth-screen') && !document.getElementById('auth-screen').classList.contains('hidden')) {
         if (AppState.userProfile && AppState.userProfile.onboardingCompleted) {
@@ -219,6 +221,7 @@ async function syncProfileToCloud(profile) {
     console.log('Profile synced to cloud');
   } catch (err) {
     console.error('Profile sync failed:', err);
+    throw err;
   }
 }
 
@@ -286,6 +289,7 @@ async function syncFoodEntryToCloud(entry) {
     await updateCloudDailySummary(entry.date);
   } catch (err) {
     console.error('Food entry sync failed:', err);
+    throw err;
   }
 }
 
@@ -401,3 +405,37 @@ async function getAnalyticsByRange(startDate, endDate) {
     return null;
   }
 }
+
+// ==================== BACKGROUND SYNC QUEUE ====================
+
+async function processSyncQueue() {
+  if (!navigator.onLine) return;
+  const user = AppState.authUser;
+  if (!user || user.isGuest) return;
+  
+  if (typeof getSyncQueue !== 'function') return;
+  
+  try {
+    const queue = await getSyncQueue();
+    if (!queue || queue.length === 0) return;
+    
+    console.log(`Processing ${queue.length} offline sync items...`);
+    
+    for (const item of queue) {
+      try {
+        if (item.action === 'ADD_FOOD') {
+          await syncFoodEntryToCloud(item.payload);
+        } else if (item.action === 'UPDATE_PROFILE') {
+          await syncProfileToCloud(item.payload);
+        }
+        await removeFromSyncQueue(item.id);
+      } catch (err) {
+        console.warn('Sync queue item failed, keeping for later:', err);
+      }
+    }
+  } catch (err) {
+    console.error('Error processing sync queue:', err);
+  }
+}
+
+window.addEventListener('online', processSyncQueue);

@@ -1122,6 +1122,7 @@ function getNextMealTime() {
 // Get all nutrition data combined
 function getAllNutritionData() {
   return {
+    ...BREAD_UNITS,
     ...RICE_DATA,
     ...LENTILS_DATA,
     ...DAIRY_DATA,
