@@ -38,19 +38,29 @@ const TDEE_CONSTANTS = {
     maintenance: 0,
     bulking: 350        // Lean bulk surplus (slightly higher for Indian diet)
   },
-  // Evidence-based protein per kg bodyweight by goal (g/kg)
-  // Based on meta-analyses: Morton et al. 2018, Helms et al. 2014, Phillips & Van Loon 2011
-  // 
-  // Cutting: HIGHEST protein need (2.0-2.4 g/kg) - preserves lean mass during deficit
-  //          Higher end for aggressive cuts or leaner individuals
-  // Bulking: HIGH protein (1.8-2.2 g/kg) - supports muscle protein synthesis
-  //          Slightly lower than cutting since caloric surplus is protein-sparing
-  // Maintenance: MODERATE protein (1.4-1.6 g/kg) - sustains muscle mass
+  // Protein per kg bodyweight based on GOAL + ACTIVITY LEVEL (g/kg)
+  // Matrix: [goal][activity] - practical values for Indian mess diet
   //
-  proteinPerKg: {
-    cutting: 2.2,       // High to preserve muscle in caloric deficit
-    maintenance: 1.6,   // Moderate for active individuals
-    bulking: 2.0        // High for muscle building (surplus is protein-sparing)
+  // Lite: Light exercise 1-2x/week (students with mostly sedentary routine)
+  // Moderate: Exercise 3-4x/week (regular gym-goers, sports players)
+  // Pro: Intense training 5-6x/week (athletes, serious lifters)
+  //
+  proteinPerKgMatrix: {
+    cutting: {
+      lite: 1.6,      // Preserve muscle with light activity
+      moderate: 1.8,  // More active = slightly higher needs
+      pro: 2.0        // Athletes cutting need max protein
+    },
+    maintenance: {
+      lite: 1.0,      // Basic needs for light activity
+      moderate: 1.2,  // Active lifestyle needs more
+      pro: 1.4        // Athletes maintaining need higher
+    },
+    bulking: {
+      lite: 1.4,      // Building with light activity
+      moderate: 1.6,  // Regular trainers bulking
+      pro: 1.8        // Athletes need max for gains
+    }
   },
   // Minimum safe daily calorie floors
   minCalories: {
@@ -479,8 +489,10 @@ function calculateGoals() {
   const minCal = TDEE_CONSTANTS.minCalories[gender] || 1200;
   adjustedCalories = Math.max(adjustedCalories, minCal);
 
-  // Goal-based protein target (g/kg bodyweight)
-  const proteinGoal = Math.round(weight * (TDEE_CONSTANTS.proteinPerKg[goalMode] || 1.0));
+  // Goal + Activity based protein target (g/kg bodyweight)
+  const proteinMatrix = TDEE_CONSTANTS.proteinPerKgMatrix[goalMode] || TDEE_CONSTANTS.proteinPerKgMatrix.maintenance;
+  const proteinPerKg = proteinMatrix[activity] || proteinMatrix.moderate || 1.2;
+  const proteinGoal = Math.round(weight * proteinPerKg);
 
   AppState.tempProfile.calculatedCalories = tdee;
   AppState.tempProfile.calculatedProtein = proteinGoal;
@@ -713,7 +725,10 @@ function updateGoalPreview(goalMode) {
   const minCal = TDEE_CONSTANTS.minCalories[profile.gender] || 1200;
   adjustedCalories = Math.max(adjustedCalories, minCal);
 
-  const proteinGoal = Math.round(profile.weight * (TDEE_CONSTANTS.proteinPerKg[goalMode] || 1.0));
+  // Goal + Activity based protein
+  const proteinMatrix = TDEE_CONSTANTS.proteinPerKgMatrix[goalMode] || TDEE_CONSTANTS.proteinPerKgMatrix.maintenance;
+  const proteinPerKg = proteinMatrix[profile.activity] || proteinMatrix.moderate || 1.2;
+  const proteinGoal = Math.round(profile.weight * proteinPerKg);
 
   // Update preview display
   const previewCalories = document.getElementById('preview-calories');
@@ -726,7 +741,7 @@ function updateGoalPreview(goalMode) {
   const notes = {
     cutting: `TDEE (${tdee.toLocaleString()}) − 500 kcal`,
     maintenance: 'Based on your TDEE calculation',
-    bulking: `TDEE (${tdee.toLocaleString()}) + 300 kcal`
+    bulking: `TDEE (${tdee.toLocaleString()}) + 350 kcal`
   };
   if (previewNote) previewNote.textContent = notes[goalMode] || notes.maintenance;
 }
@@ -756,7 +771,11 @@ async function saveGoalsFromModal() {
   let adjustedCalories = tdee + (TDEE_CONSTANTS.goalCalorieAdjustment[goalMode] || 0);
   const minCal = TDEE_CONSTANTS.minCalories[profile.gender] || 1200;
   adjustedCalories = Math.max(adjustedCalories, minCal);
-  const proteinGoal = Math.round(profile.weight * (TDEE_CONSTANTS.proteinPerKg[goalMode] || 1.0));
+  
+  // Goal + Activity based protein
+  const proteinMatrix = TDEE_CONSTANTS.proteinPerKgMatrix[goalMode] || TDEE_CONSTANTS.proteinPerKgMatrix.maintenance;
+  const proteinPerKg = proteinMatrix[profile.activity] || proteinMatrix.moderate || 1.2;
+  const proteinGoal = Math.round(profile.weight * proteinPerKg);
 
   // Update profile
   const updatedProfile = {
