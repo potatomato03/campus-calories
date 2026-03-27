@@ -36,16 +36,21 @@ const TDEE_CONSTANTS = {
   goalCalorieAdjustment: {
     cutting: -500,      // ~0.45 kg/week fat loss
     maintenance: 0,
-    bulking: 300         // Lean bulk surplus
+    bulking: 350        // Lean bulk surplus (slightly higher for Indian diet)
   },
   // Evidence-based protein per kg bodyweight by goal (g/kg)
-  // Cutting: high protein preserves lean mass during deficit (Helms et al., 2014)
-  // Maintenance: RDA-aligned for general health + active lifestyle
-  // Bulking: adequate for muscle protein synthesis in caloric surplus
+  // Based on meta-analyses: Morton et al. 2018, Helms et al. 2014, Phillips & Van Loon 2011
+  // 
+  // Cutting: HIGHEST protein need (2.0-2.4 g/kg) - preserves lean mass during deficit
+  //          Higher end for aggressive cuts or leaner individuals
+  // Bulking: HIGH protein (1.8-2.2 g/kg) - supports muscle protein synthesis
+  //          Slightly lower than cutting since caloric surplus is protein-sparing
+  // Maintenance: MODERATE protein (1.4-1.6 g/kg) - sustains muscle mass
+  //
   proteinPerKg: {
-    cutting: 2.0,
-    maintenance: 1.0,
-    bulking: 1.6
+    cutting: 2.2,       // High to preserve muscle in caloric deficit
+    maintenance: 1.6,   // Moderate for active individuals
+    bulking: 2.0        // High for muscle building (surplus is protein-sparing)
   },
   // Minimum safe daily calorie floors
   minCalories: {

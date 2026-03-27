@@ -1,5 +1,6 @@
 -- Campus Calories V2 - Supabase Database Schema
 -- Run this in Supabase SQL Editor (Dashboard > SQL Editor)
+-- Safe to run multiple times - uses DROP IF EXISTS
 
 -- ==================== TABLES ====================
 
@@ -102,7 +103,35 @@ ALTER TABLE meal_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streaks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE goals ENABLE ROW LEVEL SECURITY;
 
--- Admins Policies (only admins can read admin list)
+-- ==================== DROP EXISTING POLICIES (safe re-run) ====================
+DROP POLICY IF EXISTS "Users can check if they are admin" ON admins;
+DROP POLICY IF EXISTS "Admins can manage other admins" ON admins;
+DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Admins can view all profiles" ON user_profiles;
+DROP POLICY IF EXISTS "Users can view own logs" ON daily_logs;
+DROP POLICY IF EXISTS "Users can insert own logs" ON daily_logs;
+DROP POLICY IF EXISTS "Users can update own logs" ON daily_logs;
+DROP POLICY IF EXISTS "Users can delete own logs" ON daily_logs;
+DROP POLICY IF EXISTS "Admins can view all logs" ON daily_logs;
+DROP POLICY IF EXISTS "Users can view own summaries" ON daily_summaries;
+DROP POLICY IF EXISTS "Users can insert own summaries" ON daily_summaries;
+DROP POLICY IF EXISTS "Users can update own summaries" ON daily_summaries;
+DROP POLICY IF EXISTS "Users can view own meal logs" ON meal_logs;
+DROP POLICY IF EXISTS "Users can insert own meal logs" ON meal_logs;
+DROP POLICY IF EXISTS "Users can update own meal logs" ON meal_logs;
+DROP POLICY IF EXISTS "Users can delete own meal logs" ON meal_logs;
+DROP POLICY IF EXISTS "Users can view own streaks" ON streaks;
+DROP POLICY IF EXISTS "Users can insert own streaks" ON streaks;
+DROP POLICY IF EXISTS "Users can update own streaks" ON streaks;
+DROP POLICY IF EXISTS "Users can view own goals" ON goals;
+DROP POLICY IF EXISTS "Users can insert own goals" ON goals;
+DROP POLICY IF EXISTS "Users can update own goals" ON goals;
+
+-- ==================== CREATE POLICIES ====================
+
+-- Admins Policies
 CREATE POLICY "Users can check if they are admin" ON admins
   FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admins can manage other admins" ON admins
@@ -117,7 +146,6 @@ CREATE POLICY "Users can insert own profile" ON user_profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON user_profiles
   FOR UPDATE USING (auth.uid() = id);
--- Admins can view all profiles
 CREATE POLICY "Admins can view all profiles" ON user_profiles
   FOR SELECT USING (
     auth.uid() IN (SELECT user_id FROM admins)
@@ -132,7 +160,6 @@ CREATE POLICY "Users can update own logs" ON daily_logs
   FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own logs" ON daily_logs
   FOR DELETE USING (auth.uid() = user_id);
--- Admins can view all logs
 CREATE POLICY "Admins can view all logs" ON daily_logs
   FOR SELECT USING (
     auth.uid() IN (SELECT user_id FROM admins)
