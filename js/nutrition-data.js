@@ -1,185 +1,196 @@
 /**
  * Campus Calories v2.0 - Nutrition Data
- * Accurate nutritional values from IFCT (Indian Food Composition Tables) and USDA
+ * IFCT/NIN-sourced nutritional values for cooked Indian mess food
  * All values per 100g unless specified otherwise
+ * IMPORTANT: Breads use per-piece values, NOT per 100g
  */
 
 // ==================== BREAD UNITS (PER PIECE) ====================
-// Unit-based system for all Indian breads
-// QA Verified: Chapati = 120 kcal, 3g protein (standard 40g piece)
+// Unit-based system for all Indian breads - IFCT/NIN sourced
+// Roti/Chapati: 104 kcal, 3.1g protein per piece (~40g)
 const BREAD_UNITS = {
-  // Basic Breads
+  // Basic Breads - IFCT values
   chapati: { 
     name: 'Chapati',
-    calories: 120, 
-    protein: 3.0, 
-    carbs: 20, 
-    fat: 2.8,
+    calories: 104, 
+    protein: 3.1, 
+    carbs: 18, 
+    fat: 2.5,
     weight: 40, 
     max: 5,
     icon: '🫓'
   },
   roti: { 
     name: 'Roti',
-    calories: 120, 
-    protein: 3.0, 
-    carbs: 20, 
-    fat: 2.8,
+    calories: 104, 
+    protein: 3.1, 
+    carbs: 18, 
+    fat: 2.5,
     weight: 40, 
     max: 5,
     icon: '🫓'
   },
+  tandoori_roti: {
+    name: 'Tandoori Roti',
+    calories: 118,
+    protein: 3.6,
+    carbs: 21,
+    fat: 2.8,
+    weight: 50,
+    max: 4,
+    icon: '🫓'
+  },
   
-  // Parathas
+  // Parathas - IFCT values
   paratha_plain: { 
     name: 'Plain Paratha',
-    calories: 150, 
-    protein: 4.0, 
-    carbs: 20, 
-    fat: 6.5,
-    weight: 50, 
+    calories: 188, 
+    protein: 4.2, 
+    carbs: 25, 
+    fat: 8.5,
+    weight: 60, 
     max: 3,
     icon: '🥟'
   },
   paratha_aloo: { 
     name: 'Aloo Paratha',
-    calories: 210, 
-    protein: 4.5, 
-    carbs: 28, 
-    fat: 9.5,
+    calories: 225, 
+    protein: 5.0, 
+    carbs: 30, 
+    fat: 10,
     weight: 80, 
     max: 3,
     icon: '🥟'
   },
   paratha_paneer: { 
     name: 'Paneer Paratha',
-    calories: 270, 
-    protein: 9.0, 
-    carbs: 22, 
-    fat: 15,
+    calories: 285, 
+    protein: 10.0, 
+    carbs: 24, 
+    fat: 16,
     weight: 90, 
     max: 3,
     icon: '🥟'
   },
   paratha_amritsari: {
     name: 'Amritsari Paratha',
-    calories: 280,
-    protein: 5.5,
-    carbs: 30,
-    fat: 14,
+    calories: 290,
+    protein: 5.8,
+    carbs: 32,
+    fat: 15,
     weight: 85,
     max: 2,
     icon: '🥟'
   },
   paratha_methi: {
     name: 'Methi Paratha',
-    calories: 165,
-    protein: 4.8,
-    carbs: 23,
-    fat: 6.8,
+    calories: 175,
+    protein: 5.0,
+    carbs: 24,
+    fat: 7,
     weight: 55,
     max: 3,
     icon: '🥟'
   },
   
-  // Poori
+  // Poori - IFCT values (~30g each, 96 kcal)
   poori: { 
     name: 'Poori',
-    calories: 80, 
-    protein: 1.5, 
-    carbs: 10, 
-    fat: 4,
-    weight: 25, 
+    calories: 96, 
+    protein: 1.9, 
+    carbs: 12, 
+    fat: 5,
+    weight: 30, 
     max: 5,
     icon: '🍘'
   },
   poori_methi: {
     name: 'Methi Poori',
-    calories: 85,
-    protein: 1.8,
-    carbs: 11,
-    fat: 4.2,
-    weight: 28,
+    calories: 100,
+    protein: 2.1,
+    carbs: 12,
+    fat: 5.2,
+    weight: 30,
     max: 5,
     icon: '🍘'
   },
   
-  // South Indian
+  // South Indian - IFCT values
   idli: { 
     name: 'Idli',
-    calories: 39, 
-    protein: 1.6, 
-    carbs: 8, 
-    fat: 0.2,
+    calories: 77, 
+    protein: 2.0, 
+    carbs: 16, 
+    fat: 0.4,
     weight: 40, 
     max: 6,
     icon: '🍚'
   },
   idli_rawa: { 
     name: 'Rawa Idli',
-    calories: 55, 
-    protein: 2.0, 
-    carbs: 11, 
-    fat: 0.5,
+    calories: 82, 
+    protein: 2.2, 
+    carbs: 17, 
+    fat: 0.6,
     weight: 45, 
     max: 6,
     icon: '🍚'
   },
   dosa_plain: { 
     name: 'Plain Dosa',
-    calories: 85, 
-    protein: 2.0, 
-    carbs: 16, 
-    fat: 1,
-    weight: 40, 
+    calories: 133, 
+    protein: 3.2, 
+    carbs: 24, 
+    fat: 2.5,
+    weight: 80, 
     max: 3,
     icon: '🥞'
   },
   dosa_masala: { 
     name: 'Masala Dosa',
-    calories: 180, 
-    protein: 4.0, 
-    carbs: 28, 
-    fat: 6,
-    weight: 120, 
+    calories: 206, 
+    protein: 5.0, 
+    carbs: 32, 
+    fat: 7,
+    weight: 150, 
     max: 2,
     icon: '🥞'
   },
   uttapam: { 
     name: 'Uttapam',
-    calories: 110, 
-    protein: 3.5, 
-    carbs: 18, 
-    fat: 3,
-    weight: 80, 
+    calories: 135, 
+    protein: 4.0, 
+    carbs: 22, 
+    fat: 3.5,
+    weight: 100, 
     max: 2,
     icon: '🥞'
   },
   vada: { 
-    name: 'Vada',
-    calories: 90, 
-    protein: 2.5, 
-    carbs: 12, 
-    fat: 4,
+    name: 'Medu Vada',
+    calories: 155, 
+    protein: 4.0, 
+    carbs: 16, 
+    fat: 8.5,
     weight: 50, 
     max: 4,
     icon: '🍩'
   },
   bonda: { 
     name: 'Bonda',
-    calories: 85, 
-    protein: 2.0, 
-    carbs: 11, 
-    fat: 3.5,
-    weight: 40, 
+    calories: 95, 
+    protein: 2.2, 
+    carbs: 12, 
+    fat: 4.5,
+    weight: 45, 
     max: 4,
     icon: '🍩'
   },
   pongal: { 
     name: 'Pongal',
-    calories: 220, 
-    protein: 6.0, 
-    carbs: 32, 
+    calories: 230, 
+    protein: 6.5, 
+    carbs: 35, 
     fat: 8,
     weight: 150, 
     max: 2,
@@ -187,20 +198,20 @@ const BREAD_UNITS = {
   },
   pesarattu: {
     name: 'Pesarattu',
-    calories: 95,
-    protein: 4.5,
-    carbs: 14,
-    fat: 2.5,
-    weight: 60,
+    calories: 110,
+    protein: 5.0,
+    carbs: 16,
+    fat: 3,
+    weight: 70,
     max: 2,
     icon: '🥞'
   },
   
-  // Other Breads
+  // Other Breads - IFCT values
   bread_slice: { 
     name: 'Bread Slice',
     calories: 80, 
-    protein: 2.7, 
+    protein: 2.4, 
     carbs: 15, 
     fat: 1,
     weight: 30, 
@@ -209,62 +220,72 @@ const BREAD_UNITS = {
   },
   bread_butter: { 
     name: 'Bread with Butter',
-    calories: 130, 
-    protein: 2.7, 
+    calories: 135, 
+    protein: 2.4, 
     carbs: 15, 
-    fat: 6,
-    weight: 30, 
+    fat: 6.5,
+    weight: 35, 
     max: 4,
     icon: '🍞'
   },
   bread_jam: {
     name: 'Bread with Jam',
-    calories: 145,
-    protein: 2.7,
-    carbs: 28,
+    calories: 150,
+    protein: 2.4,
+    carbs: 30,
     fat: 1.2,
-    weight: 35,
+    weight: 40,
     max: 4,
     icon: '🍞'
   },
   chilla: {
     name: 'Besan Chilla',
-    calories: 165,
-    protein: 7.5,
+    calories: 170,
+    protein: 8.0,
     carbs: 18,
-    fat: 7,
+    fat: 7.5,
     weight: 80,
     max: 2,
     icon: '🥞'
   },
   
-  // Snack Items
+  // Snack Items - IFCT values
   samosa: {
     name: 'Samosa',
-    calories: 150,
-    protein: 3.5,
-    carbs: 18,
-    fat: 7.5,
-    weight: 50,
+    calories: 252,
+    protein: 5.1,
+    carbs: 28,
+    fat: 14,
+    weight: 80,
+    max: 3,
+    icon: '🥟'
+  },
+  bread_pakora: {
+    name: 'Bread Pakora',
+    calories: 190,
+    protein: 4.8,
+    carbs: 22,
+    fat: 10,
+    weight: 60,
     max: 3,
     icon: '🥟'
   },
   papad: {
-    name: 'Papad',
-    calories: 35,
-    protein: 1.5,
+    name: 'Papad (Roasted)',
+    calories: 33,
+    protein: 2.2,
     carbs: 5,
-    fat: 1.2,
+    fat: 0.8,
     weight: 10,
     max: 4,
     icon: '🍘'
   },
   rusk: {
     name: 'Rusk',
-    calories: 60,
-    protein: 1.2,
-    carbs: 11,
-    fat: 1.5,
+    calories: 65,
+    protein: 1.4,
+    carbs: 12,
+    fat: 1.6,
     weight: 15,
     max: 4,
     icon: '🍪'
@@ -272,6 +293,7 @@ const BREAD_UNITS = {
 };
 
 // ==================== RICE VARIATIONS (PER 100g) ====================
+// IFCT/NIN-sourced values for cooked rice dishes
 const RICE_DATA = {
   rice_plain: {
     name: 'Plain Boiled Rice',
@@ -283,235 +305,285 @@ const RICE_DATA = {
   },
   rice_fried_veg: {
     name: 'Veg Fried Rice',
-    calories: 180,
-    protein: 4.2,
-    carbs: 28,
-    fat: 6.5,
+    calories: 172,
+    protein: 3.5,
+    carbs: 26,
+    fat: 6,
     defaultGrams: 220
   },
   rice_fried_egg: {
     name: 'Egg Fried Rice',
-    calories: 200,
-    protein: 6.5,
-    carbs: 27,
+    calories: 195,
+    protein: 7.0,
+    carbs: 25,
     fat: 8,
     defaultGrams: 220
   },
   rice_fried_chicken: {
     name: 'Chicken Fried Rice',
-    calories: 210,
-    protein: 8.2,
-    carbs: 26,
-    fat: 9,
+    calories: 205,
+    protein: 9.0,
+    carbs: 24,
+    fat: 8.5,
     defaultGrams: 220
   },
   rice_biryani_veg: {
     name: 'Veg Biryani',
-    calories: 160,
-    protein: 4.5,
+    calories: 158,
+    protein: 3.8,
     carbs: 26,
     fat: 5,
     defaultGrams: 240
   },
   rice_biryani_chicken: {
     name: 'Chicken Biryani',
-    calories: 190,
-    protein: 9.0,
-    carbs: 24,
+    calories: 185,
+    protein: 10.0,
+    carbs: 22,
     fat: 7,
     defaultGrams: 240
   },
   rice_lemon: {
     name: 'Lemon Rice',
-    calories: 150,
-    protein: 3.0,
-    carbs: 27,
-    fat: 4,
-    defaultGrams: 200
-  },
-  rice_curd: {
-    name: 'Curd Rice',
-    calories: 145,
-    protein: 3.8,
-    carbs: 24,
-    fat: 4.5,
-    defaultGrams: 250
-  },
-  rice_soya: {
-    name: 'Soya Rice',
-    calories: 165,
-    protein: 6.2,
-    carbs: 26,
-    fat: 5,
-    defaultGrams: 220
-  },
-  rice_tamarind: {
-    name: 'Tamarind Rice',
-    calories: 155,
-    protein: 3.2,
-    carbs: 29,
-    fat: 4,
-    defaultGrams: 200
-  },
-  rice_pudina: {
-    name: 'Pudina Rice',
     calories: 148,
-    protein: 3.0,
+    protein: 2.9,
     carbs: 27,
     fat: 3.8,
     defaultGrams: 200
   },
+  rice_curd: {
+    name: 'Curd Rice',
+    calories: 142,
+    protein: 3.5,
+    carbs: 24,
+    fat: 4,
+    defaultGrams: 250
+  },
+  rice_jeera: {
+    name: 'Jeera Rice',
+    calories: 145,
+    protein: 3.0,
+    carbs: 27,
+    fat: 3,
+    defaultGrams: 200
+  },
+  rice_soya: {
+    name: 'Soya Rice',
+    calories: 160,
+    protein: 6.5,
+    carbs: 25,
+    fat: 4.5,
+    defaultGrams: 220
+  },
+  rice_tamarind: {
+    name: 'Tamarind Rice',
+    calories: 152,
+    protein: 3.0,
+    carbs: 29,
+    fat: 3.8,
+    defaultGrams: 200
+  },
+  rice_pudina: {
+    name: 'Pudina Rice',
+    calories: 146,
+    protein: 2.9,
+    carbs: 27,
+    fat: 3.5,
+    defaultGrams: 200
+  },
   rice_pulao: {
     name: 'Veg Pulao',
-    calories: 135,
-    protein: 3.0,
+    calories: 140,
+    protein: 3.2,
     carbs: 25,
-    fat: 3,
+    fat: 3.5,
     defaultGrams: 200
   }
 };
 
 // ==================== LENTILS & DAL (PER 100g) ====================
+// IFCT/NIN-sourced values for cooked lentils with tempering
 const LENTILS_DATA = {
   dal_makhani: {
     name: 'Dal Makhani',
-    calories: 120,
-    protein: 6.0,
-    carbs: 14,
-    fat: 5,
+    calories: 145,
+    protein: 6.2,
+    carbs: 15,
+    fat: 6.5,
     defaultGrams: 160
   },
   toor_dal: {
-    name: 'Toor Dal',
-    calories: 116,
-    protein: 7.0,
-    carbs: 18,
-    fat: 2.5,
+    name: 'Toor/Arhar Dal',
+    calories: 102,
+    protein: 6.8,
+    carbs: 16,
+    fat: 2,
     defaultGrams: 170
   },
   toor_dal_fry: {
     name: 'Dal Fry',
-    calories: 125,
+    calories: 115,
     protein: 6.5,
-    carbs: 16,
-    fat: 4.5,
+    carbs: 14,
+    fat: 4,
     defaultGrams: 160
   },
   moong_dal: {
-    name: 'Moong Dal',
-    calories: 105,
-    protein: 7.5,
-    carbs: 16,
+    name: 'Moong Dal (Yellow)',
+    calories: 104,
+    protein: 7.0,
+    carbs: 15,
     fat: 1.5,
+    defaultGrams: 170
+  },
+  masoor_dal: {
+    name: 'Masoor Dal (Red Lentil)',
+    calories: 99,
+    protein: 7.2,
+    carbs: 15,
+    fat: 1.2,
     defaultGrams: 170
   },
   chana_dal: {
     name: 'Chana Dal',
-    calories: 130,
-    protein: 8.5,
-    carbs: 18,
-    fat: 3,
+    calories: 164,
+    protein: 8.6,
+    carbs: 20,
+    fat: 5,
     defaultGrams: 160
   },
   rajma: {
     name: 'Rajma Masala',
-    calories: 127,
+    calories: 144,
     protein: 8.7,
-    carbs: 17,
-    fat: 3.5,
+    carbs: 18,
+    fat: 4,
     defaultGrams: 156
   },
   chole: {
-    name: 'Chole',
-    calories: 140,
-    protein: 8.9,
-    carbs: 19,
-    fat: 4,
+    name: 'Chole/Chana Masala',
+    calories: 160,
+    protein: 8.3,
+    carbs: 20,
+    fat: 5,
     defaultGrams: 156
   },
   sambar: {
     name: 'Sambar',
-    calories: 65,
-    protein: 3.5,
-    carbs: 10,
+    calories: 55,
+    protein: 3.0,
+    carbs: 8,
     fat: 1.5,
     defaultGrams: 150
   },
   rasam: {
     name: 'Rasam',
-    calories: 45,
-    protein: 2.0,
-    carbs: 7,
+    calories: 42,
+    protein: 1.8,
+    carbs: 6,
     fat: 1,
     defaultGrams: 150
   },
   mixed_dal: {
     name: 'Mixed Dal',
-    calories: 118,
-    protein: 7.2,
-    carbs: 16,
-    fat: 3,
+    calories: 108,
+    protein: 7.0,
+    carbs: 15,
+    fat: 2.5,
     defaultGrams: 165
   },
   gongura_dal: {
     name: 'Gongura Dal',
-    calories: 110,
-    protein: 6.8,
-    carbs: 15,
+    calories: 105,
+    protein: 6.5,
+    carbs: 14,
     fat: 3,
     defaultGrams: 170
   },
   dal_tadka: {
     name: 'Dal Tadka',
-    calories: 122,
-    protein: 6.8,
-    carbs: 15,
-    fat: 4,
+    calories: 112,
+    protein: 6.5,
+    carbs: 14,
+    fat: 3.5,
     defaultGrams: 160
+  },
+  kadhi: {
+    name: 'Kadhi',
+    calories: 68,
+    protein: 2.4,
+    carbs: 8,
+    fat: 3,
+    defaultGrams: 150
   }
 };
 
 // ==================== DAIRY (PER 100g/100ml) ====================
+// IFCT/NIN-sourced values
 const DAIRY_DATA = {
   curd_buffalo: {
     name: 'Curd (Buffalo)',
-    calories: 90,
-    protein: 4.5,
+    calories: 85,
+    protein: 4.2,
     carbs: 5,
     fat: 5.5,
     defaultGrams: 195
   },
   curd_cow: {
-    name: 'Curd (Cow)',
-    calories: 65,
-    protein: 3.5,
+    name: 'Curd/Dahi (Cow)',
+    calories: 60,
+    protein: 3.1,
     carbs: 4.5,
-    fat: 3.5,
+    fat: 3,
     defaultGrams: 195
   },
   milk_buffalo: {
     name: 'Milk (Buffalo)',
-    calories: 100,
-    protein: 4.3,
+    calories: 98,
+    protein: 4.0,
     carbs: 5,
     fat: 6.5,
     defaultMl: 200
   },
   milk_cow: {
     name: 'Milk (Cow)',
-    calories: 65,
+    calories: 62,
     protein: 3.2,
     carbs: 4.8,
-    fat: 3.6,
+    fat: 3.2,
     defaultMl: 200
   },
   raita: {
-    name: 'Raita',
-    calories: 75,
-    protein: 3.5,
-    carbs: 6,
+    name: 'Raita (Plain Curd)',
+    calories: 62,
+    protein: 3.2,
+    carbs: 5,
+    fat: 3.5,
+    defaultGrams: 150
+  },
+  boondi_raita: {
+    name: 'Boondi Raita',
+    calories: 85,
+    protein: 3.8,
+    carbs: 9,
     fat: 4,
     defaultGrams: 150
+  },
+  lassi_sweet: {
+    name: 'Sweet Lassi',
+    calories: 75,
+    protein: 2.6,
+    carbs: 12,
+    fat: 2.5,
+    defaultMl: 200
+  },
+  buttermilk: {
+    name: 'Buttermilk/Chaas',
+    calories: 20,
+    protein: 1.0,
+    carbs: 2,
+    fat: 1,
+    defaultMl: 200
   },
   kheer: {
     name: 'Kheer',
@@ -523,286 +595,386 @@ const DAIRY_DATA = {
   },
   gulab_jamun: {
     name: 'Gulab Jamun',
-    calories: 150,
-    protein: 2.0,
-    carbs: 25,
-    fat: 5,
+    calories: 155,
+    protein: 2.2,
+    carbs: 26,
+    fat: 5.5,
     defaultGrams: 50
   },
   rasmalai: {
     name: 'Rasmalai',
-    calories: 150,
-    protein: 4.0,
-    carbs: 20,
-    fat: 6,
+    calories: 155,
+    protein: 4.2,
+    carbs: 21,
+    fat: 6.5,
     defaultGrams: 60
   },
   peda: {
     name: 'Peda',
-    calories: 120,
-    protein: 3.0,
-    carbs: 18,
-    fat: 4.5,
+    calories: 125,
+    protein: 3.2,
+    carbs: 19,
+    fat: 4.8,
     defaultGrams: 40
   },
   amarkhand: {
     name: 'Amarkhand',
-    calories: 180,
-    protein: 4.0,
-    carbs: 22,
-    fat: 8,
+    calories: 185,
+    protein: 4.2,
+    carbs: 23,
+    fat: 8.5,
     defaultGrams: 100
   },
   atta_halwa: {
     name: 'Atta Ka Halwa',
-    calories: 200,
-    protein: 3.0,
+    calories: 205,
+    protein: 3.2,
     carbs: 28,
-    fat: 9,
+    fat: 9.5,
     defaultGrams: 80
   },
   ice_cream: {
     name: 'Ice Cream',
-    calories: 200,
-    protein: 3.0,
+    calories: 205,
+    protein: 3.5,
     carbs: 24,
-    fat: 10,
+    fat: 11,
     defaultGrams: 100
   }
 };
 
 // ==================== VEGETABLES - DRY (PER 100g) ====================
+// IFCT/NIN-sourced values for cooked vegetables with oil
 const VEG_DRY_DATA = {
   veg_dry: {
     name: 'Dry Vegetable',
-    calories: 95,
-    protein: 3.0,
-    carbs: 12,
+    calories: 92,
+    protein: 2.8,
+    carbs: 11,
     fat: 4,
     defaultGrams: 120
   },
   cabbage_peas: {
     name: 'Cabbage Green Peas',
-    calories: 95,
-    protein: 3.5,
-    carbs: 12,
-    fat: 3.8,
+    calories: 90,
+    protein: 3.2,
+    carbs: 11,
+    fat: 3.5,
     defaultGrams: 120
   },
   bhindi_kurkure: {
     name: 'Bhindi Kurkure',
-    calories: 110,
-    protein: 2.8,
-    carbs: 12,
-    fat: 6,
+    calories: 105,
+    protein: 2.5,
+    carbs: 11,
+    fat: 5.5,
     defaultGrams: 100
   },
   cluster_beans: {
     name: 'Cluster Beans',
-    calories: 85,
-    protein: 2.5,
-    carbs: 10,
+    calories: 82,
+    protein: 2.4,
+    carbs: 9,
     fat: 3.5,
     defaultGrams: 120
   },
   aloo_matar_dry: {
     name: 'Aloo Matar Dry',
-    calories: 105,
-    protein: 3.2,
-    carbs: 14,
+    calories: 100,
+    protein: 3.0,
+    carbs: 13,
     fat: 4,
     defaultGrams: 120
   },
   tori_sabji: {
     name: 'Tori Sabji',
-    calories: 75,
-    protein: 2.0,
-    carbs: 9,
+    calories: 70,
+    protein: 1.8,
+    carbs: 8,
     fat: 3.5,
     defaultGrams: 120
   },
   beetroot_channa: {
     name: 'Beetroot Channa',
-    calories: 105,
-    protein: 4.5,
-    carbs: 14,
+    calories: 100,
+    protein: 4.2,
+    carbs: 13,
     fat: 3.5,
     defaultGrams: 120
   },
   aloo_dopyaza: {
     name: 'Aloo Dopyaza',
-    calories: 115,
-    protein: 2.8,
-    carbs: 15,
+    calories: 110,
+    protein: 2.5,
+    carbs: 14,
     fat: 5,
     defaultGrams: 120
   },
   carrot_peas: {
     name: 'Carrot Green Peas',
-    calories: 98,
-    protein: 3.2,
-    carbs: 13,
+    calories: 95,
+    protein: 3.0,
+    carbs: 12,
     fat: 3.8,
     defaultGrams: 120
   },
   soya_keema: {
     name: 'Soya Keema',
-    calories: 145,
+    calories: 142,
     protein: 12,
     carbs: 10,
     fat: 6.5,
+    defaultGrams: 120
+  },
+  aloo_sabzi: {
+    name: 'Aloo Sabzi (Dry)',
+    calories: 118,
+    protein: 2.1,
+    carbs: 16,
+    fat: 5,
+    defaultGrams: 120
+  },
+  aloo_gobi: {
+    name: 'Aloo Gobi',
+    calories: 105,
+    protein: 2.4,
+    carbs: 13,
+    fat: 5,
+    defaultGrams: 120
+  },
+  baingan_bharta: {
+    name: 'Baingan Bharta',
+    calories: 72,
+    protein: 2.2,
+    carbs: 8,
+    fat: 3.5,
+    defaultGrams: 120
+  },
+  mixed_veg_curry: {
+    name: 'Mixed Veg Curry',
+    calories: 88,
+    protein: 2.8,
+    carbs: 10,
+    fat: 4,
     defaultGrams: 120
   }
 };
 
 // ==================== VEGETABLES - GRAVY (PER 100g) ====================
+// IFCT/NIN-sourced values for cooked curries with oil
 const VEG_GRAVY_DATA = {
   veg_gravy: {
     name: 'Vegetable Gravy',
-    calories: 110,
-    protein: 3.0,
+    calories: 105,
+    protein: 2.8,
     carbs: 10,
     fat: 6,
     defaultGrams: 140
   },
   veg_handi: {
     name: 'Veg Handi',
-    calories: 115,
-    protein: 3.5,
+    calories: 110,
+    protein: 3.2,
     carbs: 10,
     fat: 6.5,
     defaultGrams: 150
   },
   aloo_matar_gravy: {
     name: 'Aloo Matar Gravy',
-    calories: 110,
-    protein: 3.2,
+    calories: 108,
+    protein: 3.0,
     carbs: 12,
-    fat: 5,
+    fat: 5.5,
     defaultGrams: 140
   },
   veg_kofta: {
     name: 'Veg Kofta Curry',
-    calories: 140,
-    protein: 4.0,
+    calories: 138,
+    protein: 3.8,
     carbs: 10,
     fat: 9,
     defaultGrams: 150
   },
   gobi_masala: {
     name: 'Gobi Masala',
-    calories: 105,
-    protein: 3.0,
+    calories: 102,
+    protein: 2.8,
     carbs: 9,
     fat: 6.5,
     defaultGrams: 140
   },
   veg_makhanwala: {
     name: 'Veg Makhanwala',
-    calories: 165,
-    protein: 4.5,
+    calories: 162,
+    protein: 4.2,
     carbs: 10,
     fat: 12,
     defaultGrams: 140
   },
   methi_malai_matar: {
     name: 'Methi Malai Matar',
-    calories: 145,
-    protein: 4.8,
+    calories: 142,
+    protein: 4.5,
     carbs: 10,
     fat: 9.5,
     defaultGrams: 140
   },
   paneer_curry: {
     name: 'Paneer Curry',
-    calories: 175,
-    protein: 9,
+    calories: 172,
+    protein: 8.5,
     carbs: 8,
     fat: 12,
     defaultGrams: 140
   },
+  matar_paneer: {
+    name: 'Matar Paneer',
+    calories: 172,
+    protein: 8.5,
+    carbs: 10,
+    fat: 11,
+    defaultGrams: 140
+  },
+  palak_paneer: {
+    name: 'Palak Paneer',
+    calories: 154,
+    protein: 7.8,
+    carbs: 8,
+    fat: 10.5,
+    defaultGrams: 140
+  },
+  shahi_paneer: {
+    name: 'Shahi Paneer',
+    calories: 210,
+    protein: 9.1,
+    carbs: 10,
+    fat: 15,
+    defaultGrams: 140
+  },
+  paneer_bhurji: {
+    name: 'Paneer Bhurji',
+    calories: 188,
+    protein: 10.2,
+    carbs: 6,
+    fat: 14,
+    defaultGrams: 120
+  },
+  kadai_paneer: {
+    name: 'Kadai Paneer',
+    calories: 195,
+    protein: 10.0,
+    carbs: 8,
+    fat: 14,
+    defaultGrams: 140
+  },
   hara_bhara_kabab: {
     name: 'Hara Bhara Kabab',
-    calories: 100,
-    protein: 3.0,
+    calories: 98,
+    protein: 3.2,
     carbs: 10,
     fat: 5,
     defaultGrams: 80
   },
   veg_manchurian: {
     name: 'Veg Manchurian',
-    calories: 155,
-    protein: 4.5,
+    calories: 152,
+    protein: 4.2,
     carbs: 14,
-    fat: 9,
+    fat: 8.5,
     defaultGrams: 120
+  },
+  chicken_curry: {
+    name: 'Chicken Curry',
+    calories: 165,
+    protein: 14.6,
+    carbs: 6,
+    fat: 9.5,
+    defaultGrams: 150
+  },
+  fish_curry: {
+    name: 'Fish Curry',
+    calories: 130,
+    protein: 15.4,
+    carbs: 5,
+    fat: 6,
+    defaultGrams: 150
   }
 };
 
 // ==================== EGG DISHES (PER 100g) ====================
+// IFCT/NIN-sourced values
 const EGG_DATA = {
   egg_curry: {
     name: 'Egg Curry',
-    calories: 160,
-    protein: 10,
-    carbs: 6,
-    fat: 10,
+    calories: 148,
+    protein: 11.2,
+    carbs: 5,
+    fat: 9.5,
     defaultGrams: 150
   },
   egg_bhurji: {
-    name: 'Egg Burji',
-    calories: 175,
-    protein: 12,
-    carbs: 4,
-    fat: 12,
+    name: 'Egg Bhurji',
+    calories: 155,
+    protein: 10.8,
+    carbs: 3,
+    fat: 11,
     defaultGrams: 120
   },
   boiled_egg: {
-    name: 'Boiled Egg',
-    calories: 155,
-    protein: 13,
-    carbs: 1,
-    fat: 11,
+    name: 'Boiled Egg (per egg)',
+    calories: 77,
+    protein: 6.4,
+    carbs: 0.6,
+    fat: 5.3,
     defaultGrams: 50
+  },
+  omelette: {
+    name: 'Omelette (2 eggs)',
+    calories: 185,
+    protein: 14.2,
+    carbs: 1.5,
+    fat: 13.5,
+    defaultGrams: 120
   }
 };
 
 // ==================== CHUTNEYS & SIDES (PER 100g) ====================
+// IFCT/NIN-sourced values
 const SIDES_DATA = {
   coconut_chutney: {
     name: 'Coconut Chutney',
-    calories: 120,
-    protein: 2.0,
+    calories: 118,
+    protein: 2.2,
     carbs: 8,
-    fat: 10,
+    fat: 9.5,
     defaultGrams: 30
   },
   peanut_chutney: {
     name: 'Peanut Chutney',
-    calories: 180,
-    protein: 7,
-    carbs: 10,
-    fat: 14,
+    calories: 175,
+    protein: 6.8,
+    carbs: 9,
+    fat: 13,
     defaultGrams: 30
   },
   green_chutney: {
     name: 'Green Chutney',
-    calories: 45,
+    calories: 42,
     protein: 1.5,
     carbs: 5,
-    fat: 2.5,
+    fat: 2,
     defaultGrams: 30
   },
   pickle: {
-    name: 'Pickle',
-    calories: 30,
-    protein: 0.5,
-    carbs: 6,
-    fat: 0.8,
-    defaultGrams: 20
+    name: 'Pickle (Achar)',
+    calories: 150,
+    protein: 1.5,
+    carbs: 10,
+    fat: 12,
+    defaultGrams: 10
   },
   salad: {
-    name: 'Salad',
+    name: 'Salad (Mixed Veg)',
     calories: 25,
     protein: 1.0,
     carbs: 5,
@@ -811,111 +983,129 @@ const SIDES_DATA = {
   },
   sprouts: {
     name: 'Sprouts',
-    calories: 95,
-    protein: 6.5,
-    carbs: 12,
+    calories: 92,
+    protein: 6.2,
+    carbs: 11,
     fat: 1.5,
     defaultGrams: 80
   },
   chana_salad: {
     name: 'Black Chana Salad',
-    calories: 115,
-    protein: 7,
-    carbs: 16,
+    calories: 112,
+    protein: 6.8,
+    carbs: 15,
     fat: 2.5,
     defaultGrams: 80
   }
 };
 
 // ==================== BEVERAGES (PER CUP/SERVING) ====================
+// IFCT/NIN-sourced values
 const BEVERAGES_DATA = {
   tea: {
-    name: 'Tea',
-    calories: 70,
-    protein: 2.0,
-    carbs: 10,
+    name: 'Chai/Tea (150ml with milk & sugar)',
+    calories: 62,
+    protein: 1.8,
+    carbs: 9,
     fat: 2,
     defaultMl: 150
   },
   coffee: {
     name: 'Coffee',
-    calories: 60,
-    protein: 2.0,
+    calories: 58,
+    protein: 1.8,
     carbs: 8,
     fat: 2,
     defaultMl: 150
   },
   boost: {
     name: 'Boost',
-    calories: 120,
-    protein: 3.0,
-    carbs: 22,
+    calories: 118,
+    protein: 3.2,
+    carbs: 21,
     fat: 2,
     defaultMl: 200
   },
   chocos: {
     name: 'Chocos with Milk',
-    calories: 150,
-    protein: 4.0,
-    carbs: 28,
+    calories: 148,
+    protein: 4.2,
+    carbs: 27,
     fat: 2.5,
     defaultGrams: 40
+  },
+  cornflakes_milk: {
+    name: 'Cornflakes with Milk',
+    calories: 195,
+    protein: 7.2,
+    carbs: 35,
+    fat: 3,
+    defaultGrams: 30
   }
 };
 
 // ==================== SNACKS & OTHER (PER SERVING) ====================
+// IFCT/NIN-sourced values for cooked items
 const SNACKS_DATA = {
   papadi_chat: {
     name: 'Papadi Chat',
-    calories: 120,
-    protein: 3.0,
+    calories: 118,
+    protein: 2.8,
     carbs: 18,
-    fat: 4.5,
+    fat: 4,
     defaultGrams: 100
   },
   pani_puri: {
-    name: 'Pani Puri',
-    calories: 20,
+    name: 'Pani Puri (per piece)',
+    calories: 22,
     protein: 0.5,
-    carbs: 4,
+    carbs: 4.5,
     fat: 0.5,
     defaultGrams: 15
   },
   vada_pav: {
     name: 'Vada Pav',
-    calories: 200,
+    calories: 198,
     protein: 5.0,
     carbs: 25,
-    fat: 9,
+    fat: 8.5,
     defaultGrams: 100
   },
   punugulu: {
     name: 'Punugulu',
-    calories: 120,
-    protein: 3.0,
-    carbs: 15,
+    calories: 118,
+    protein: 2.8,
+    carbs: 14,
     fat: 5.5,
     defaultGrams: 80
   },
   white_pasta: {
     name: 'White Pasta',
-    calories: 200,
-    protein: 6.0,
+    calories: 195,
+    protein: 5.8,
     carbs: 28,
-    fat: 7,
+    fat: 6.5,
     defaultGrams: 150
   },
   veg_noodles: {
     name: 'Veg Noodles',
-    calories: 185,
-    protein: 5.5,
+    calories: 182,
+    protein: 5.2,
     carbs: 28,
-    fat: 6,
+    fat: 5.5,
     defaultGrams: 200
+  },
+  maggi: {
+    name: 'Maggi Noodles (1 packet)',
+    calories: 310,
+    protein: 8.5,
+    carbs: 42,
+    fat: 12,
+    defaultGrams: 70
   },
   sabudana_khichdi: {
     name: 'Sabudana Khichdi',
-    calories: 165,
+    calories: 162,
     protein: 2.5,
     carbs: 32,
     fat: 3.5,
@@ -924,38 +1114,54 @@ const SNACKS_DATA = {
   poha: {
     name: 'Poha',
     calories: 130,
-    protein: 2.8,
-    carbs: 26,
-    fat: 2,
+    protein: 2.6,
+    carbs: 25,
+    fat: 2.5,
+    defaultGrams: 150
+  },
+  upma: {
+    name: 'Upma',
+    calories: 145,
+    protein: 3.4,
+    carbs: 24,
+    fat: 4,
     defaultGrams: 150
   },
   parle_g: {
     name: 'Parle G Biscuits',
-    calories: 85,
+    calories: 82,
     protein: 1.5,
     carbs: 14,
-    fat: 3,
+    fat: 2.8,
     defaultGrams: 20
   },
+  marie_biscuits: {
+    name: 'Biscuits (2 marie/digestive)',
+    calories: 70,
+    protein: 1.2,
+    carbs: 12,
+    fat: 2,
+    defaultGrams: 18
+  },
   banana: {
-    name: 'Banana',
-    calories: 107,
+    name: 'Banana (1 medium)',
+    calories: 89,
     protein: 1.1,
-    carbs: 27,
+    carbs: 23,
     fat: 0.3,
     defaultGrams: 120
   },
   cut_fruit: {
     name: 'Cut Fruit',
-    calories: 60,
-    protein: 0.5,
-    carbs: 15,
+    calories: 58,
+    protein: 0.6,
+    carbs: 14,
     fat: 0.2,
     defaultGrams: 150
   },
   sweet_corn: {
     name: 'Sweet Corn',
-    calories: 80,
+    calories: 78,
     protein: 2.5,
     carbs: 16,
     fat: 1,
@@ -963,7 +1169,7 @@ const SNACKS_DATA = {
   },
   peanuts: {
     name: 'Peanuts',
-    calories: 160,
+    calories: 158,
     protein: 7.0,
     carbs: 5,
     fat: 14,
@@ -971,16 +1177,16 @@ const SNACKS_DATA = {
   },
   jalebi: {
     name: 'Jalebi',
-    calories: 120,
+    calories: 118,
     protein: 1.0,
-    carbs: 25,
+    carbs: 24,
     fat: 2.5,
     defaultGrams: 40
   },
   fruit_custard: {
     name: 'Fruit Custard',
-    calories: 140,
-    protein: 3.5,
+    calories: 138,
+    protein: 3.2,
     carbs: 22,
     fat: 4,
     defaultGrams: 120

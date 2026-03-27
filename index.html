@@ -10,8 +10,15 @@
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
   
+  <!-- iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Campus Calories">
+  
   <!-- Icons -->
   <link rel="apple-touch-icon" href="images/icon-192x192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="images/icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/icon-192x192.png">
   
   <!-- Google Fonts - Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,6 +27,9 @@
   
   <!-- Supabase JS Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- ZXing Barcode Scanner Library -->
+  <script src="https://unpkg.com/@zxing/browser@latest/umd/index.min.js"></script>
   
   <!-- Styles -->
   <link rel="stylesheet" href="css/variables.css">
@@ -549,21 +559,22 @@
                 </button>
                 <button class="rice-option" data-rice="rice_fried_veg">
                   <span class="rice-name">Veg Fried Rice</span>
-                  <span class="rice-info">180 kcal/100g</span>
+                  <span class="rice-info">172 kcal/100g</span>
                 </button>
                 <button class="rice-option" data-rice="rice_biryani_veg">
                   <span class="rice-name">Veg Biryani</span>
-                  <span class="rice-info">160 kcal/100g</span>
+                  <span class="rice-info">158 kcal/100g</span>
                 </button>
                 <button class="rice-option" data-rice="rice_lemon">
                   <span class="rice-name">Lemon Rice</span>
-                  <span class="rice-info">150 kcal/100g</span>
+                  <span class="rice-info">148 kcal/100g</span>
                 </button>
               </div>
               <div class="gram-slider-container">
                 <label class="slider-label">Amount: <span id="rice-grams">250</span>g</label>
                 <input type="range" id="rice-slider" class="gram-slider" min="50" max="400" value="250" step="10">
                 <div class="slider-presets">
+                  <button data-grams="75" class="half-preset">Half (75g)</button>
                   <button data-grams="150">150g</button>
                   <button data-grams="250" class="active">250g</button>
                   <button data-grams="350">350g</button>
@@ -632,6 +643,15 @@
               <input type="text" id="packaged-search" class="search-input" placeholder="Search products...">
               <button id="search-btn" class="search-btn">🔍</button>
             </div>
+            <div class="barcode-section" style="margin: 12px 0; display: flex; gap: 8px; flex-wrap: wrap;">
+              <button id="scan-barcode-btn" class="btn btn-secondary" style="flex: 1; min-width: 140px;">
+                <span>📷</span> Scan Barcode
+              </button>
+              <div class="barcode-manual" style="display: flex; gap: 4px; flex: 1; min-width: 180px;">
+                <input type="text" id="manual-barcode" class="form-input" placeholder="Enter barcode" style="flex: 1; font-size: 14px;">
+                <button id="lookup-barcode-btn" class="btn btn-outline" style="padding: 8px 12px;">Go</button>
+              </div>
+            </div>
             <div id="search-results" class="search-results"></div>
             <div id="portion-modal" class="portion-modal hidden">
               <h5 id="portion-product-name">Product Name</h5>
@@ -647,6 +667,26 @@
                 <span id="portion-protein">0g protein</span>
               </div>
               <button id="add-portion" class="btn btn-primary btn-full">Add to Log</button>
+            </div>
+          </div>
+          
+          <!-- Barcode Scanner Modal -->
+          <div id="barcode-scanner-modal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content" style="max-width: 400px;">
+              <div class="modal-header">
+                <h3>Scan Barcode</h3>
+                <button class="modal-close" id="close-scanner">×</button>
+              </div>
+              <div class="modal-body" style="padding: 0;">
+                <video id="barcode-video" style="width: 100%; max-height: 300px; background: #000;"></video>
+                <div id="barcode-status" style="padding: 12px; text-align: center; font-size: 14px;">
+                  Initializing camera...
+                </div>
+              </div>
+              <div class="modal-footer" style="padding: 12px;">
+                <button id="cancel-scan" class="btn btn-secondary btn-full">Cancel</button>
+              </div>
             </div>
           </div>
           

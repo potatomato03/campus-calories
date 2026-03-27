@@ -3,7 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0066EE">
   <title>Admin Panel - Campus Calories</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Campus Calories">
+  <link rel="apple-touch-icon" href="images/icon-192x192.png">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,19 +22,19 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/admin.css">
+  
+  <!-- Supabase JS Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="admin-body">
-  <!-- Password Gate -->
+  <!-- Auth Check Screen -->
   <div id="password-gate" class="password-gate">
     <div class="password-card">
       <div class="password-icon">🔐</div>
       <h2 class="password-title">Admin Access</h2>
-      <p class="password-text">Enter password to access admin panel</p>
-      <div class="password-input-wrapper">
-        <input type="password" id="admin-password" class="form-input" placeholder="Password">
-        <button id="toggle-password" class="password-toggle">👁️</button>
-      </div>
-      <button id="login-btn" class="btn btn-primary btn-full">Access Panel</button>
+      <p class="password-text">Checking authentication...</p>
+      <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #0066EE; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
     </div>
   </div>
 
@@ -185,37 +196,96 @@
     </div>
   </div>
 
+  <script src="js/supabase-config.js"></script>
   <script src="js/database.js"></script>
   <script src="js/nutrition-data.js"></script>
   <script src="js/mess-menu.js"></script>
   <script src="js/anc-menu.js"></script>
   <script>
-    const ADMIN_PASSWORD = 'campus2024';
+    // Admin authentication - uses Supabase auth
+    let isAuthenticated = false;
+    let currentUser = null;
+
+    // Check admin status on page load - BEFORE rendering anything
+    async function checkAdminAuth() {
+      try {
+        // Wait for Supabase client to be ready
+        if (typeof supabase === 'undefined') {
+          console.error('Supabase client not available');
+          redirectToLogin('Authentication system not available');
+          return false;
+        }
+
+        // Get current session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          console.log('No active session');
+          redirectToLogin('Please log in first');
+          return false;
+        }
+
+        currentUser = session.user;
+        console.log('User authenticated:', currentUser.email);
+
+        // Check if user is admin in the admins table
+        const { data: adminData, error: adminError } = await supabase
+          .from('admins')
+          .select('user_id')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (adminError || !adminData) {
+          console.log('User is not an admin');
+          redirectToLogin('Access denied. You are not authorized as an admin.');
+          return false;
+        }
+
+        console.log('Admin access verified');
+        isAuthenticated = true;
+        return true;
+
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        redirectToLogin('Authentication error. Please try again.');
+        return false;
+      }
+    }
+
+    function redirectToLogin(message) {
+      alert(message);
+      window.location.href = 'index.html';
+    }
 
     // Initialize
     document.addEventListener('DOMContentLoaded', async () => {
+      // First check admin authentication
+      const isAdmin = await checkAdminAuth();
+      
+      if (!isAdmin) {
+        // Already redirected in checkAdminAuth
+        return;
+      }
+
+      // Hide password gate and show admin panel (user is authenticated)
+      document.getElementById('password-gate').classList.add('hidden');
+      document.getElementById('admin-panel').classList.remove('hidden');
+
       await initDatabase();
       setupAdminListeners();
       loadStats();
     });
 
     function setupAdminListeners() {
-      // Password toggle
-      document.getElementById('toggle-password')?.addEventListener('click', () => {
-        const input = document.getElementById('admin-password');
-        input.type = input.type === 'password' ? 'text' : 'password';
-      });
-
-      // Login
-      document.getElementById('login-btn')?.addEventListener('click', checkPassword);
-      document.getElementById('admin-password')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') checkPassword();
-      });
-
-      // Logout
-      document.getElementById('logout-btn')?.addEventListener('click', () => {
-        document.getElementById('password-gate').classList.remove('hidden');
-        document.getElementById('admin-panel').classList.add('hidden');
+      // Logout - sign out of Supabase
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        try {
+          await supabase.auth.signOut();
+          window.location.href = 'index.html';
+        } catch (error) {
+          console.error('Logout error:', error);
+          window.location.href = 'index.html';
+        }
       });
 
       // Tab switching
@@ -232,17 +302,6 @@
           if (tab.dataset.tab === 'bread') loadBreadEditor();
         });
       });
-    }
-
-    function checkPassword() {
-      const input = document.getElementById('admin-password');
-      if (input.value === ADMIN_PASSWORD) {
-        document.getElementById('password-gate').classList.add('hidden');
-        document.getElementById('admin-panel').classList.remove('hidden');
-        input.value = '';
-      } else {
-        alert('Incorrect password');
-      }
     }
 
     async function loadStats() {

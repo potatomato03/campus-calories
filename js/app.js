@@ -1067,28 +1067,62 @@ function loadMessItems() {
     const nutrition = getItemNutrition(item);
     const selection = AppState.messSelections?.get(item.name);
     const quantity = selection?.quantity || 0;
+    const portionType = selection?.portionType || 'full'; // 'full' or 'half'
+    const customGrams = selection?.customGrams || null;
 
     // Get weight for display
     let weightDisplay = '';
+    let defaultWeight = 100;
     if (item.type === 'unit' && item.bread_key) {
       const bread = BREAD_UNITS[item.bread_key];
       weightDisplay = bread ? `| ${bread.weight}g/pc` : '';
+      defaultWeight = bread?.weight || 40;
     } else if (item.type === 'gram' && item.category) {
       const data = getNutritionByKey(item.category);
       const grams = item.grams || data?.defaultGrams || 100;
       weightDisplay = `| ${grams}g`;
+      defaultWeight = grams;
     } else if (item.type === 'ml') {
       weightDisplay = `| ${item.default || 200}ml`;
+      defaultWeight = item.default || 200;
     } else if (item.weight) {
       weightDisplay = `| ${item.weight}g`;
+      defaultWeight = item.weight;
+    }
+
+    // Calculate displayed nutrition based on portion type
+    let displayNutrition = { ...nutrition };
+    if (portionType === 'half') {
+      displayNutrition.calories = Math.round(nutrition.calories / 2);
+      displayNutrition.protein = Math.round(nutrition.protein * 5) / 10; // half, rounded to 1 decimal
+    }
+    if (customGrams) {
+      const factor = customGrams / defaultWeight;
+      displayNutrition.calories = Math.round(nutrition.calories * factor);
+      displayNutrition.protein = Math.round(nutrition.protein * factor * 10) / 10;
     }
 
     return `
-      <div class="mess-item-card ${quantity > 0 ? 'selected' : ''}" data-item='${JSON.stringify(item)}' data-index="${index}">
+      <div class="mess-item-card ${quantity > 0 ? 'selected' : ''}" data-item='${JSON.stringify(item)}' data-index="${index}" data-default-weight="${defaultWeight}">
         <div class="mess-item-section">${item.section}</div>
         <div class="mess-item-info">
           <div class="mess-item-name">${item.name}</div>
-          <div class="mess-item-meta">${nutrition.calories} kcal | ${nutrition.protein}g protein ${weightDisplay}</div>
+          <div class="mess-item-meta">${displayNutrition.calories} kcal | ${displayNutrition.protein}g protein ${weightDisplay}</div>
+          ${quantity > 0 ? `
+          <div class="portion-controls" style="margin-top: 6px;">
+            <div class="portion-toggle" data-name="${item.name}">
+              <button class="portion-toggle-btn ${portionType === 'full' ? 'active' : ''}" data-portion="full">Full</button>
+              <button class="portion-toggle-btn ${portionType === 'half' ? 'active' : ''}" data-portion="half">Half</button>
+            </div>
+            <div class="custom-gram-toggle">
+              <button class="custom-gram-toggle-btn" data-name="${item.name}">Custom (g)</button>
+            </div>
+            <div class="custom-gram-input ${customGrams ? 'visible' : ''}" data-name="${item.name}">
+              <input type="number" min="10" max="500" step="10" value="${customGrams || defaultWeight}" placeholder="${defaultWeight}">
+              <span>g</span>
+            </div>
+          </div>
+          ` : ''}
         </div>
         <div class="mess-item-quantity">
           <button class="qty-btn-small qty-minus" data-name="${item.name}" ${quantity <= 0 ? 'disabled' : ''}>-</button>
@@ -1112,6 +1146,41 @@ function loadMessItems() {
       e.stopPropagation();
       updateItemQuantity(btn.dataset.name, 1);
     });
+  });
+
+  // Add portion toggle handlers
+  itemsList.querySelectorAll('.portion-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const toggle = btn.closest('.portion-toggle');
+      const itemName = toggle.dataset.name;
+      const portionType = btn.dataset.portion;
+      updateItemPortion(itemName, portionType);
+    });
+  });
+
+  // Add custom gram toggle handlers
+  itemsList.querySelectorAll('.custom-gram-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const itemName = btn.dataset.name;
+      const inputContainer = itemsList.querySelector(`.custom-gram-input[data-name="${itemName}"]`);
+      if (inputContainer) {
+        inputContainer.classList.toggle('visible');
+      }
+    });
+  });
+
+  // Add custom gram input handlers
+  itemsList.querySelectorAll('.custom-gram-input input').forEach(input => {
+    input.addEventListener('change', (e) => {
+      e.stopPropagation();
+      const container = input.closest('.custom-gram-input');
+      const itemName = container.dataset.name;
+      const customGrams = parseInt(input.value) || null;
+      updateItemCustomGrams(itemName, customGrams);
+    });
+    input.addEventListener('click', (e) => e.stopPropagation());
   });
 }
 
@@ -1154,16 +1223,75 @@ function updateItemQuantity(itemName, delta) {
   }
 
   updateSelectedSummary();
+  loadMessItems(); // Reload to show portion controls for selected items
+}
+
+// Update portion type (full/half) for an item
+function updateItemPortion(itemName, portionType) {
+  if (!AppState.messSelections || !AppState.messSelections.has(itemName)) return;
+
+  const current = AppState.messSelections.get(itemName);
+  AppState.messSelections.set(itemName, {
+    ...current,
+    portionType: portionType,
+    customGrams: null // Reset custom grams when switching portions
+  });
+
+  loadMessItems();
+  updateSelectedSummary();
+}
+
+// Update custom gram override for an item
+function updateItemCustomGrams(itemName, customGrams) {
+  if (!AppState.messSelections || !AppState.messSelections.has(itemName)) return;
+
+  const current = AppState.messSelections.get(itemName);
+  AppState.messSelections.set(itemName, {
+    ...current,
+    customGrams: customGrams,
+    portionType: customGrams ? 'custom' : 'full' // Mark as custom when using gram override
+  });
+
+  loadMessItems();
+  updateSelectedSummary();
 }
 
 function updateSelectedSummary() {
   const selections = AppState.messSelections || new Map();
   const count = selections.size;
   let totalCalories = 0;
+  let totalProtein = 0;
 
   selections.forEach((item) => {
     const nutrition = getItemNutrition(item);
-    totalCalories += nutrition.calories * item.quantity;
+    let itemCalories = nutrition.calories;
+    let itemProtein = nutrition.protein;
+
+    // Apply portion modifiers
+    if (item.portionType === 'half') {
+      itemCalories = Math.round(itemCalories / 2);
+      itemProtein = Math.round(itemProtein * 5) / 10;
+    } else if (item.customGrams) {
+      // Get default weight for this item type
+      let defaultWeight = 100;
+      if (item.type === 'unit' && item.bread_key) {
+        const bread = BREAD_UNITS[item.bread_key];
+        defaultWeight = bread?.weight || 40;
+      } else if (item.type === 'gram' && item.category) {
+        const data = getNutritionByKey(item.category);
+        defaultWeight = item.grams || data?.defaultGrams || 100;
+      } else if (item.type === 'ml') {
+        defaultWeight = item.default || 200;
+      } else if (item.weight) {
+        defaultWeight = item.weight;
+      }
+      const factor = item.customGrams / defaultWeight;
+      itemCalories = Math.round(itemCalories * factor);
+      itemProtein = Math.round(itemProtein * factor * 10) / 10;
+    }
+
+    totalCalories += itemCalories * item.quantity;
+    totalProtein += itemProtein * item.quantity;
   });
 
   const summary = document.getElementById('selected-items-summary');
@@ -1179,7 +1307,7 @@ function updateSelectedSummary() {
     countEl.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''} selected`;
   }
   if (calsEl) {
-    calsEl.textContent = `${totalCalories} kcal`;
+    calsEl.textContent = `${totalCalories} kcal | ${totalProtein}g protein`;
   }
   if (addBtn) {
     addBtn.disabled = count === 0;
@@ -1193,18 +1321,49 @@ async function addMessItemsToLog() {
 
   for (const [name, item] of selections) {
     const nutrition = getItemNutrition(item);
-    const totalCalories = nutrition.calories * item.quantity;
-    const totalProtein = nutrition.protein * item.quantity;
+    let itemCalories = nutrition.calories;
+    let itemProtein = nutrition.protein;
+    let portionLabel = '';
+
+    // Apply portion modifiers
+    if (item.portionType === 'half') {
+      itemCalories = Math.round(itemCalories / 2);
+      itemProtein = Math.round(itemProtein * 5) / 10;
+      portionLabel = 'half';
+    } else if (item.customGrams) {
+      // Get default weight for this item type
+      let defaultWeight = 100;
+      if (item.type === 'unit' && item.bread_key) {
+        const bread = BREAD_UNITS[item.bread_key];
+        defaultWeight = bread?.weight || 40;
+      } else if (item.type === 'gram' && item.category) {
+        const data = getNutritionByKey(item.category);
+        defaultWeight = item.grams || data?.defaultGrams || 100;
+      } else if (item.type === 'ml') {
+        defaultWeight = item.default || 200;
+      } else if (item.weight) {
+        defaultWeight = item.weight;
+      }
+      const factor = item.customGrams / defaultWeight;
+      itemCalories = Math.round(itemCalories * factor);
+      itemProtein = Math.round(itemProtein * factor * 10) / 10;
+      portionLabel = `${item.customGrams}g`;
+    } else {
+      portionLabel = 'full';
+    }
+
+    const totalCalories = itemCalories * item.quantity;
+    const totalProtein = itemProtein * item.quantity;
 
     await addFoodEntry({
-      name: `${item.name} (${item.quantity})`,
+      name: `${item.name} (${item.quantity}${portionLabel !== 'full' ? ', ' + portionLabel : ''})`,
       category: 'mess',
       calories: totalCalories,
       protein: totalProtein,
       carbs: 0,
       fat: 0,
       date: AppState.selectedDate,
-      portion: `${item.quantity} serving${item.quantity > 1 ? 's' : ''}`,
+      portion: `${item.quantity} ${portionLabel} serving${item.quantity > 1 ? 's' : ''}`,
       timestamp: Date.now()
     });
     addedCount += item.quantity;
@@ -1662,6 +1821,221 @@ function setupPackagedListeners() {
 
   // Add portion
   document.getElementById('add-portion')?.addEventListener('click', addPortionToLog);
+
+  // Barcode scanner setup
+  setupBarcodeScanner();
+}
+
+// ==================== BARCODE SCANNER ====================
+let barcodeReader = null;
+let scannerActive = false;
+
+function setupBarcodeScanner() {
+  // Scan barcode button
+  document.getElementById('scan-barcode-btn')?.addEventListener('click', openBarcodeScanner);
+  
+  // Close scanner buttons
+  document.getElementById('close-scanner')?.addEventListener('click', closeBarcodeScanner);
+  document.getElementById('cancel-scan')?.addEventListener('click', closeBarcodeScanner);
+  document.querySelector('#barcode-scanner-modal .modal-overlay')?.addEventListener('click', closeBarcodeScanner);
+  
+  // Manual barcode lookup
+  document.getElementById('lookup-barcode-btn')?.addEventListener('click', lookupManualBarcode);
+  document.getElementById('manual-barcode')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') lookupManualBarcode();
+  });
+}
+
+async function openBarcodeScanner() {
+  const modal = document.getElementById('barcode-scanner-modal');
+  const video = document.getElementById('barcode-video');
+  const status = document.getElementById('barcode-status');
+  
+  if (!modal || !video) return;
+  
+  modal.classList.remove('hidden');
+  status.textContent = 'Requesting camera access...';
+  
+  try {
+    // Check if ZXing library is loaded
+    if (typeof ZXingBrowser === 'undefined') {
+      throw new Error('Barcode scanner library not loaded. Please check your internet connection.');
+    }
+    
+    // Create barcode reader
+    barcodeReader = new ZXingBrowser.BrowserMultiFormatReader();
+    
+    // Get available video devices
+    const videoDevices = await barcodeReader.listVideoInputDevices();
+    
+    if (videoDevices.length === 0) {
+      throw new Error('No camera found. Please use the manual barcode entry.');
+    }
+    
+    // Prefer rear camera on mobile (look for "environment" or "back")
+    let selectedDevice = videoDevices[0];
+    for (const device of videoDevices) {
+      if (device.label.toLowerCase().includes('back') || 
+          device.label.toLowerCase().includes('environment') ||
+          device.label.toLowerCase().includes('rear')) {
+        selectedDevice = device;
+        break;
+      }
+    }
+    
+    status.textContent = 'Point camera at barcode...';
+    scannerActive = true;
+    
+    // Start scanning
+    await barcodeReader.decodeFromVideoDevice(
+      selectedDevice.deviceId,
+      video,
+      async (result, error) => {
+        if (result && scannerActive) {
+          // Barcode detected
+          scannerActive = false;
+          const barcode = result.getText();
+          console.log('Barcode detected:', barcode);
+          
+          closeBarcodeScanner();
+          await lookupBarcode(barcode);
+        }
+        if (error && !(error instanceof ZXingBrowser.NotFoundException)) {
+          console.error('Scanner error:', error);
+        }
+      }
+    );
+    
+  } catch (error) {
+    console.error('Camera error:', error);
+    
+    let errorMessage = 'Camera access failed. ';
+    if (error.name === 'NotAllowedError') {
+      errorMessage += 'Please allow camera permission and try again.';
+    } else if (error.name === 'NotFoundError') {
+      errorMessage += 'No camera found on this device.';
+    } else {
+      errorMessage += error.message || 'Please use manual barcode entry.';
+    }
+    
+    status.innerHTML = `<span style="color: var(--color-danger);">${errorMessage}</span>`;
+  }
+}
+
+function closeBarcodeScanner() {
+  scannerActive = false;
+  
+  if (barcodeReader) {
+    barcodeReader.reset();
+    barcodeReader = null;
+  }
+  
+  const modal = document.getElementById('barcode-scanner-modal');
+  modal?.classList.add('hidden');
+  
+  // Stop video stream
+  const video = document.getElementById('barcode-video');
+  if (video && video.srcObject) {
+    const tracks = video.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    video.srcObject = null;
+  }
+}
+
+async function lookupManualBarcode() {
+  const input = document.getElementById('manual-barcode');
+  const barcode = input?.value.trim();
+  
+  if (!barcode) {
+    showToast('Please enter a barcode', 'error');
+    return;
+  }
+  
+  await lookupBarcode(barcode);
+}
+
+async function lookupBarcode(barcode) {
+  const resultsContainer = document.getElementById('search-results');
+  
+  if (resultsContainer) {
+    resultsContainer.innerHTML = '<p style="text-align:center;padding:20px;">Looking up barcode...</p>';
+  }
+  
+  try {
+    // Check session cache first
+    const cachedResult = sessionStorage.getItem(`barcode_${barcode}`);
+    if (cachedResult) {
+      const product = JSON.parse(cachedResult);
+      renderPackagedResults([product]);
+      showPortionModal(JSON.stringify({
+        name: product.name || product.product_name,
+        calories: product.calories || product.nutriments?.['energy-kcal_100g'] || 0,
+        protein: product.protein || product.nutriments?.proteins_100g || 0,
+        carbs: product.carbs || product.nutriments?.carbohydrates_100g || 0,
+        fat: product.fat || product.nutriments?.fat_100g || 0
+      }));
+      return;
+    }
+    
+    // Fetch from Open Food Facts API
+    const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const data = await response.json();
+    
+    if (data.status === 1 && data.product) {
+      const product = data.product;
+      
+      // Extract nutrition info
+      const productInfo = {
+        name: product.product_name || 'Unknown Product',
+        brand: product.brands || '',
+        barcode: barcode,
+        image: product.image_url || '',
+        calories: product.nutriments?.['energy-kcal_100g'] || 0,
+        protein: product.nutriments?.proteins_100g || 0,
+        carbs: product.nutriments?.carbohydrates_100g || 0,
+        fat: product.nutriments?.fat_100g || 0,
+        serving_size: product.serving_size || '100g'
+      };
+      
+      // Cache in session storage
+      sessionStorage.setItem(`barcode_${barcode}`, JSON.stringify(productInfo));
+      
+      // Also cache in IndexedDB for offline use
+      await cachePackagedProduct(productInfo);
+      
+      // Show results
+      renderPackagedResults([productInfo]);
+      showToast(`Found: ${productInfo.name}`, 'success');
+      
+      // Auto-open portion modal
+      showPortionModal(JSON.stringify({
+        name: productInfo.name,
+        calories: productInfo.calories,
+        protein: productInfo.protein,
+        carbs: productInfo.carbs,
+        fat: productInfo.fat
+      }));
+      
+    } else {
+      // Product not found
+      resultsContainer.innerHTML = `
+        <div style="text-align:center;padding:20px;">
+          <p style="margin-bottom:12px;">Product not found for barcode: ${barcode}</p>
+          <p style="font-size:14px;color:var(--text-secondary);">Try searching by product name or use custom entry.</p>
+        </div>
+      `;
+      showToast('Product not found. Try manual search.', 'error');
+    }
+    
+  } catch (error) {
+    console.error('Barcode lookup error:', error);
+    resultsContainer.innerHTML = `
+      <div style="text-align:center;padding:20px;">
+        <p style="color:var(--color-danger);">Lookup failed. Please try again.</p>
+      </div>
+    `;
+    showToast('Barcode lookup failed', 'error');
+  }
 }
 
 function showPackagedSelection() {
@@ -1893,39 +2267,37 @@ async function estimateMealCalories() {
     return;
   }
 
-  const errorEl = document.getElementById('ai-error-message');
-  const resultEl = document.getElementById('ai-result');
-  if (errorEl) errorEl.classList.add('hidden');
-  if (resultEl) resultEl.classList.add('hidden');
-
-  // Use AppState key or user provided hardcoded key as fallback
-  const apiKey = AppState.nvidiaApiKey || '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';
-
   const btn = document.getElementById('ai-estimate-btn');
   const originalText = btn.innerHTML;
   btn.innerHTML = '<span class="ai-btn-text">Estimating...</span>';
   btn.disabled = true;
 
   try {
-    console.log('Building context for LLM...');
-    const contextData = buildRAGContext();
-    
-    console.log('Calling NVIDIA API...');
-    const result = await callNvidiaAPI(description, contextData, apiKey);
-    console.log('NVIDIA API result:', result);
+    console.log('Calling AI Estimator API...');
+    const result = await callAIEstimatorAPI(description);
+    console.log('AI Estimator API result:', result);
 
-    if (!result || typeof result.calories !== 'number') {
+    // Validate result structure
+    if (!result || typeof result.kcal !== 'number') {
       throw new Error('Invalid response format from AI');
     }
 
-    displayAIResult(result, description);
-    showToast('Estimation generated', 'success');
+    // Map to expected format (API returns kcal, we use calories internally)
+    const formattedResult = {
+      calories: result.kcal,
+      protein: result.protein,
+      carbs: result.carbs,
+      fat: result.fat
+    };
+
+    displayAIResult(formattedResult, description);
+    showToast('Estimated using AI', 'success');
   } catch (error) {
     console.error('AI Estimation failed:', error);
-    if (errorEl) {
-      errorEl.textContent = `AI Estimation Failed: ${error.message}`;
-      errorEl.classList.remove('hidden');
-    }
+    showToast(`AI Error: ${error.message}. Using basic estimator.`, 'error');
+    // Fallback to local parser
+    const result = parseMealDescription(description);
+    displayAIResult(result, description);
   } finally {
     btn.innerHTML = originalText;
     btn.disabled = false;
@@ -1936,53 +2308,30 @@ function showSettings() {
   showScreen('settings-screen');
 }
 
-async function callNvidiaAPI(description, contextData, apiKey) {
-  // Use our local Python proxy to bypass browser CORS blocks on NVIDIA's API
-  const URL = '/api/nvidia';
-
-  const systemPrompt = `You are an expert nutritionist algorithm for Campus Calories.
-Evaluate the user's food description against the provided local nutrition database and categorize into one of three tiers:
-1) "Exact Local Match": The food exists exactly in the local database. Use those exact macros.
-2) "Local Educated Guess": Exact food is missing, but similar local items exist. Base estimates on closest local items.
-3) "AI General Knowledge": Food is completely foreign. Use your internal knowledge to estimate.
-
-Return ONLY a strictly valid JSON object. Do NOT wrap in markdown code blocks.
-The schema MUST be exactly:
-{"calories": number, "protein": number, "carbs": number, "fat": number, "estimation_type": "Exact Local Match" | "Local Educated Guess" | "AI General Knowledge", "explanation": "Brief 1-sentence reasoning"}
-
-[CAMPUS FOOD CONTEXT]
-${contextData}`;
-
-  const response = await fetch(URL, {
+// Server-side AI estimation API call
+async function callAIEstimatorAPI(description) {
+  const response = await fetch('/api/estimate-calories', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: "meta/llama-3.3-70b-instruct",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Meal: "${description}"` }
-      ],
-      temperature: 0.1,
-      top_p: 0.7,
-      max_tokens: 1024,
-      stream: false
-    })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description })
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API Request failed: ${response.status} ${errorText}`);
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `API Request failed: ${response.status}`);
   }
 
-  const data = await response.json();
-  const text = data.choices[0].message.content;
+  return response.json();
+}
 
-  // Clean potential markdown
-  const cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-  return JSON.parse(cleanText);
+// Legacy Gemini API function (kept for backwards compatibility, uses serverless endpoint now)
+async function callGeminiAPI(description) {
+  return callAIEstimatorAPI(description).then(result => ({
+    calories: result.kcal,
+    protein: result.protein,
+    carbs: result.carbs,
+    fat: result.fat
+  }));
 }
 
 function displayAIResult(result, description) {

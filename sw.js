@@ -3,11 +3,12 @@
  * PWA offline functionality
  */
 
-const CACHE_NAME = 'campus-calories-v2';
+const CACHE_NAME = 'campus-calories-v2.1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/admin.html',
+  '/manifest.json',
   '/css/variables.css',
   '/css/base.css',
   '/css/components.css',
@@ -15,11 +16,16 @@ const STATIC_ASSETS = [
   '/css/mess-plate.css',
   '/css/onboarding.css',
   '/css/admin.css',
+  '/css/analytics.css',
   '/js/database.js',
   '/js/nutrition-data.js',
   '/js/mess-menu.js',
   '/js/anc-menu.js',
-  '/js/app.js'
+  '/js/app.js',
+  '/js/auth.js',
+  '/js/supabase-config.js',
+  '/images/icon-192x192.png',
+  '/images/icon-512x512.png'
 ];
 
 // Install event - cache static assets
@@ -63,11 +69,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Skip API requests (let them go to network)
-  if (request.url.includes('openfoodfacts.org')) {
+  // Network-first strategy for API calls (Supabase, OpenFoodFacts, AI estimator)
+  if (request.url.includes('openfoodfacts.org') || 
+      request.url.includes('supabase') || 
+      request.url.includes('/api/')) {
+    event.respondWith(
+      fetch(request)
+        .catch(() => caches.match(request))
+    );
     return;
   }
   
+  // Cache-first strategy for static assets
   event.respondWith(
     caches.match(request)
       .then((cachedResponse) => {
@@ -98,7 +111,7 @@ self.addEventListener('fetch', (event) => {
             console.error('Fetch failed:', error);
             
             // Return offline fallback for HTML requests
-            if (request.headers.get('accept').includes('text/html')) {
+            if (request.headers.get('accept')?.includes('text/html')) {
               return caches.match('/index.html');
             }
             
