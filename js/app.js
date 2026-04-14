@@ -2001,11 +2001,37 @@ async function lookupBarcode(barcode) {
       return;
     }
     
-    // Fetch from Open Food Facts API
-    const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    // Check IndexedDB cache for offline support
+    if (typeof getCachedProduct === 'function') {
+      const cachedProduct = await getCachedProduct(barcode);
+      if (cachedProduct) {
+        renderPackagedResults([cachedProduct]);
+        showToast(`Found (cached): ${cachedProduct.name}`, 'success');
+        showPortionModal(JSON.stringify({
+          name: cachedProduct.name,
+          calories: cachedProduct.calories,
+          protein: cachedProduct.protein,
+          carbs: cachedProduct.carbs,
+          fat: cachedProduct.fat
+        }));
+        return;
+      }
+    }
+    
+    // Fetch from Open Food Facts API v2
+    const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,brands,image_url,nutriments,serving_size,code`, {
+      headers: {
+        'User-Agent': 'CampusCalories/2.0 (https://campus-calories.vercel.app)'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+    
     const data = await response.json();
     
-    if (data.status === 1 && data.product) {
+    if (data.status === 'success' && data.product) {
       const product = data.product;
       
       // Extract nutrition info
@@ -2014,10 +2040,10 @@ async function lookupBarcode(barcode) {
         brand: product.brands || '',
         barcode: barcode,
         image: product.image_url || '',
-        calories: product.nutriments?.['energy-kcal_100g'] || 0,
-        protein: product.nutriments?.proteins_100g || 0,
-        carbs: product.nutriments?.carbohydrates_100g || 0,
-        fat: product.nutriments?.fat_100g || 0,
+        calories: product.nutriments?.['energy-kcal_100g'] || product.nutriments?.['energy-kcal'] || 0,
+        protein: product.nutriments?.proteins_100g || product.nutriments?.proteins || 0,
+        carbs: product.nutriments?.carbohydrates_100g || product.nutriments?.carbohydrates || 0,
+        fat: product.nutriments?.fat_100g || product.nutriments?.fat || 0,
         serving_size: product.serving_size || '100g'
       };
       
@@ -2041,23 +2067,59 @@ async function lookupBarcode(barcode) {
       }));
       
     } else {
-      // Product not found
-      resultsContainer.innerHTML = `
-        <div style="text-align:center;padding:20px;">
-          <p style="margin-bottom:12px;">Product not found for barcode: ${barcode}</p>
-          <p style="font-size:14px;color:var(--text-secondary);">Try searching by product name or use custom entry.</p>
-        </div>
-      `;
-      showToast('Product not found. Try manual search.', 'error');
+      // Product not found - try legacy v0 API as fallback
+      const fallbackResponse = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+      const fallbackData = await fallbackResponse.json();
+      
+      if (fallbackData.status === 1 && fallbackData.product) {
+        const product = fallbackData.product;
+        const productInfo = {
+          name: product.product_name || 'Unknown Product',
+          brand: product.brands || '',
+          barcode: barcode,
+          image: product.image_url || '',
+          calories: product.nutriments?.['energy-kcal_100g'] || 0,
+          protein: product.nutriments?.proteins_100g || 0,
+          carbs: product.nutriments?.carbohydrates_100g || 0,
+          fat: product.nutriments?.fat_100g || 0,
+          serving_size: product.serving_size || '100g'
+        };
+        
+        sessionStorage.setItem(`barcode_${barcode}`, JSON.stringify(productInfo));
+        await cachePackagedProduct(productInfo);
+        renderPackagedResults([productInfo]);
+        showToast(`Found: ${productInfo.name}`, 'success');
+        showPortionModal(JSON.stringify({
+          name: productInfo.name,
+          calories: productInfo.calories,
+          protein: productInfo.protein,
+          carbs: productInfo.carbs,
+          fat: productInfo.fat
+        }));
+      } else {
+        // Product not found in either API
+        if (resultsContainer) {
+          resultsContainer.innerHTML = `
+            <div style="text-align:center;padding:20px;">
+              <p style="margin-bottom:12px;">Product not found for barcode: ${barcode}</p>
+              <p style="font-size:14px;color:var(--text-secondary);">Try searching by product name or use custom entry.</p>
+            </div>
+          `;
+        }
+        showToast('Product not found. Try manual search.', 'error');
+      }
     }
     
   } catch (error) {
     console.error('Barcode lookup error:', error);
-    resultsContainer.innerHTML = `
-      <div style="text-align:center;padding:20px;">
-        <p style="color:var(--color-danger);">Lookup failed. Please try again.</p>
-      </div>
-    `;
+    if (resultsContainer) {
+      resultsContainer.innerHTML = `
+        <div style="text-align:center;padding:20px;">
+          <p style="color:var(--color-danger);">Lookup failed: ${error.message || 'Network error'}</p>
+          <p style="font-size:13px;color:var(--text-secondary);margin-top:8px;">Check your internet connection and try again.</p>
+        </div>
+      `;
+    }
     showToast('Barcode lookup failed', 'error');
   }
 }
@@ -2084,10 +2146,19 @@ async function searchPackagedFood() {
       return;
     }
 
-    // Fetch from API
+    // Fetch from Open Food Facts API v2 search
     const response = await fetch(
-      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&json=1&page_size=10&countries_tags_en=india`
+      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&json=1&page_size=10&countries_tags_en=india&fields=code,product_name,brands,image_url,nutriments`,
+      {
+        headers: {
+          'User-Agent': 'CampusCalories/2.0 (https://campus-calories.vercel.app)'
+        }
+      }
     );
+    
+    if (!response.ok) {
+      throw new Error(`Search API returned status ${response.status}`);
+    }
 
     const data = await response.json();
 
