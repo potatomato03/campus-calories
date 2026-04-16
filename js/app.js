@@ -2407,7 +2407,7 @@ function showSettings() {
 // Server-side AI estimation API call using NVIDIA
 async function callAIEstimatorAPI(description) {
   const payload = {
-    model: "meta/llama-3.3-70b-instruct",
+    model: "google/gemma-4-31b-it",
     messages: [
       {
         role: "system",
