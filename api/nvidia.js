@@ -22,7 +22,7 @@ const ALLOWED_ORIGINS = [
 
 export default async function handler(req, res) {
   const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+  if (origin && (ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.github.io'))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else if (!origin) {
     // Allow non-browser requests (like curl/postman during dev) but restrict in prod if preferred
