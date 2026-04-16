@@ -1,8 +1,38 @@
+// Simple in-memory rate limiting (resets on cold start)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 10; // 10 requests per minute
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+  if (!record) { rateLimitMap.set(ip, { count: 1, windowStart: now }); return true; }
+  if (now - record.windowStart > RATE_LIMIT_WINDOW) { rateLimitMap.set(ip, { count: 1, windowStart: now }); return true; }
+  if (record.count >= RATE_LIMIT_MAX) return false;
+  record.count++;
+  return true;
+}
+
+const ALLOWED_ORIGINS = [
+  'https://campus-calories.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:4000',
+  'http://localhost:5173',
+];
+
 export default async function handler(req, res) {
-  // CORS setup
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    // Allow non-browser requests (like curl/postman during dev) but restrict in prod if preferred
+    // res.setHeader('Access-Control-Allow-Origin', '*');
+  } else {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Or restrict to specific domains
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
@@ -14,6 +44,12 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Get client IP for rate limiting
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || 'unknown';
+  if (!checkRateLimit(ip)) {
+    return res.status(429).json({ error: 'Rate limit exceeded. Please wait a minute before trying again.' });
   }
 
   try {

@@ -36,7 +36,7 @@ To access the Admin Panel for managing menus and data:
 
 1.  Open the side menu from the Dashboard.
 2.  Click on "Admin Panel".
-3.  **Default Password:** `campus2024`
+3. Enter your authorized administrator email to receive a secure login link via Supabase OTP.
 
 ## Project Structure
 

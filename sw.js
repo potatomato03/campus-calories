@@ -3,7 +3,7 @@
  * PWA offline functionality
  */
 
-const CACHE_NAME = 'campus-calories-v2.1';
+const CACHE_NAME = 'campus-calories-v2.2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -24,6 +24,8 @@ const STATIC_ASSETS = [
   '/js/app.js',
   '/js/auth.js',
   '/js/supabase-config.js',
+  '/js/analytics.js',
+  '/js/recommendations.js',
   '/images/icon-192x192.png',
   '/images/icon-512x512.png'
 ];

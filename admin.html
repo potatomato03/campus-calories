@@ -179,7 +179,7 @@
           <div class="data-actions">
             <button class="btn btn-primary" onclick="exportData()">Export All Data</button>
             <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Import Data</button>
-            <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(this)">
+            <input type="file" id="import-file" accept=".json" style="display: none;" onchange="handleImportFile(this)">
             <button class="btn btn-secondary" onclick="clearAllDataWithConfirm()">Clear All Data</button>
           </div>
         </div>
@@ -189,7 +189,7 @@
           <textarea id="json-textarea" class="json-textarea" placeholder="Exported data will appear here..."></textarea>
           <div style="display: flex; gap: 12px; margin-top: 16px;">
             <button class="btn btn-primary" onclick="copyJsonToClipboard()">Copy to Clipboard</button>
-            <button class="btn btn-secondary" onclick="loadJsonFromTextarea()">Load from Textarea</button>
+            <button class="btn btn-secondary" onclick="handleImportFromTextarea()">Load from Textarea</button>
           </div>
         </div>
       </div>
@@ -312,6 +312,12 @@
     function saveTimeSlot(meal) {
       const start = document.getElementById(`${meal}-start`).value;
       const end = document.getElementById(`${meal}-end`).value;
+
+      // Persist to localStorage
+      const slots = JSON.parse(localStorage.getItem('adminTimeSlots') || '{}');
+      slots[meal] = { start, end };
+      localStorage.setItem('adminTimeSlots', JSON.stringify(slots));
+
       alert(`${meal.charAt(0).toUpperCase() + meal.slice(1)} hours updated: ${start} - ${end}`);
     }
 
@@ -332,6 +338,18 @@
     }
 
     function saveNutritionItem(key) {
+      const row = document.querySelector(`tr[data-key="${key}"]`);
+      if (!row) return;
+      const calories = row.querySelector('[data-field="calories"]').value;
+      const protein = row.querySelector('[data-field="protein"]').value;
+      const carbs = row.querySelector('[data-field="carbs"]').value;
+      const fat = row.querySelector('[data-field="fat"]').value;
+
+      // Persist overrides to localStorage
+      const overrides = JSON.parse(localStorage.getItem('nutritionOverrides') || '{}');
+      overrides[key] = { calories: +calories, protein: +protein, carbs: +carbs, fat: +fat };
+      localStorage.setItem('nutritionOverrides', JSON.stringify(overrides));
+
       alert(`Saved changes for ${key}`);
     }
 
@@ -352,6 +370,17 @@
     }
 
     function saveBreadItem(key) {
+      const row = document.querySelector(`.bread-editor-row[data-key="${key}"]`);
+      if (!row) return;
+      const overrides = JSON.parse(localStorage.getItem('breadOverrides') || '{}');
+      overrides[key] = {
+        name: row.querySelector('[data-field="name"]').value,
+        calories: +row.querySelector('[data-field="calories"]').value,
+        protein: +row.querySelector('[data-field="protein"]').value,
+        weight: +row.querySelector('[data-field="weight"]').value,
+        max: +row.querySelector('[data-field="max"]').value
+      };
+      localStorage.setItem('breadOverrides', JSON.stringify(overrides));
       alert(`Saved changes for ${key}`);
     }
 
@@ -406,7 +435,7 @@
       URL.revokeObjectURL(url);
     }
 
-    async function importData(input) {
+    async function handleImportFile(input) {
       const file = input.files[0];
       if (!file) return;
       
@@ -428,7 +457,7 @@
       alert('Copied to clipboard');
     }
 
-    async function loadJsonFromTextarea() {
+    async function handleImportFromTextarea() {
       const text = document.getElementById('json-textarea').value;
       if (!text.trim()) {
         alert('Please paste JSON data');

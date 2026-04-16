@@ -913,12 +913,13 @@ function renderFoodLog() {
         <div class="log-entry" data-id="${entry.id}">
           <div class="log-icon ${entry.category}">${getCategoryIcon(entry.category)}</div>
           <div class="log-details">
-            <div class="log-name">${entry.name}</div>
+            <div class="log-name">${entry.name.replace(/</g, "&lt;")}</div>
             <div class="log-meta">${entry.portion || ''}</div>
           </div>
           <div class="log-stats">
             <span class="log-calories">${entry.calories} kcal</span>
             <span class="log-protein">${entry.protein}g protein</span>
+            <button class="log-delete" onclick="deleteEntry(${entry.id})" title="Delete entry">✕</button>
           </div>
         </div>
       `).join('');
@@ -1127,7 +1128,7 @@ function loadMessItems() {
     }
 
     return `
-      <div class="mess-item-card ${quantity > 0 ? 'selected' : ''}" data-item='${JSON.stringify(item)}' data-index="${index}" data-default-weight="${defaultWeight}">
+      <div class="mess-item-card ${quantity > 0 ? 'selected' : ''}" data-item='${encodeURIComponent(JSON.stringify(item))}' data-index="${index}" data-default-weight="${defaultWeight}">
         <div class="mess-item-section">${item.section}</div>
         <div class="mess-item-info">
           <div class="mess-item-name">${item.name}</div>
@@ -1431,7 +1432,7 @@ function getItemNutrition(item) {
 
 function toggleItemSelection(card) {
   card.classList.toggle('selected');
-  const item = JSON.parse(card.dataset.item);
+  const item = JSON.parse(decodeURIComponent(card.dataset.item));
 
   if (card.classList.contains('selected')) {
     AppState.selectedItems.set(item.name, item);
@@ -1515,7 +1516,7 @@ function selectPlateSection(section) {
 
   if (itemsList) {
     itemsList.innerHTML = items.map(item => `
-      <div class="section-item-row" data-item='${JSON.stringify(item)}'>
+      <div class="section-item-row" data-item='${encodeURIComponent(JSON.stringify(item))}'>
         <div>
           <div class="section-item-name">${item.name}</div>
           <div class="section-item-nutrition">${getItemNutrition(item).calories} kcal</div>
@@ -1783,7 +1784,7 @@ function selectAncCategory(category) {
   const items = getAncItems(category);
   if (itemsList) {
     itemsList.innerHTML = items.map(item => `
-      <div class="item-card" data-item='${JSON.stringify(item)}'>
+      <div class="item-card" data-item='${encodeURIComponent(JSON.stringify(item))}'>
         <div class="item-info">
           <div class="item-name">${item.name}</div>
           <div class="item-meta">${item.calories} kcal | ${item.protein}g protein | ${item.weight}g</div>
@@ -1804,7 +1805,7 @@ function selectAncCategory(category) {
 
 function toggleAncItem(card) {
   card.classList.toggle('selected');
-  const item = JSON.parse(card.dataset.item);
+  const item = JSON.parse(decodeURIComponent(card.dataset.item));
 
   if (card.classList.contains('selected')) {
     addAncItemToLog(item);
@@ -2196,13 +2197,13 @@ function renderPackagedResults(products) {
     const protein = p.protein || p.nutriments?.proteins_100g || 0;
 
     return `
-      <div class="product-card" data-product='${JSON.stringify({
+      <div class="product-card" data-product='${encodeURIComponent(JSON.stringify({
       name: p.name || p.product_name,
       calories,
       protein,
       carbs: p.carbs || p.nutriments?.carbohydrates_100g || 0,
       fat: p.fat || p.nutriments?.fat_100g || 0
-    })}'>
+    }))}'>
         <img src="${p.image || p.image_url || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'}" 
              alt="" class="product-image" loading="lazy">
         <div class="product-info">
@@ -2218,7 +2219,7 @@ function renderPackagedResults(products) {
   }).join('');
 
   container.querySelectorAll('.product-card').forEach(card => {
-    card.addEventListener('click', () => showPortionModal(card.dataset.product));
+    card.addEventListener('click', () => showPortionModal(decodeURIComponent(card.dataset.product)));
   });
 }
 
@@ -2403,30 +2404,57 @@ function showSettings() {
   showScreen('settings-screen');
 }
 
-// Server-side AI estimation API call
+// Server-side AI estimation API call using NVIDIA
 async function callAIEstimatorAPI(description) {
-  const response = await fetch('/api/estimate-calories', {
+  const payload = {
+    model: "meta/llama3-70b-instruct",
+    messages: [
+      {
+        role: "system",
+        content: `You are a nutrition expert. Estimate calories and macros for Indian mess food using IFCT/NIN reference values:
+- Plain rice: 130 kcal/100g, 2.7g protein
+- Roti/chapati: 104 kcal/piece (40g), 3.1g protein
+- Toor dal: 102 kcal/100g, 6.8g protein
+- Rajma: 144 kcal/100g, 8.7g protein
+- Chole: 160 kcal/100g, 8.3g protein
+- Paneer dishes: 170-210 kcal/100g, 8-10g protein
+- Chicken curry: 165 kcal/100g, 14.6g protein
+- Egg curry: 148 kcal/100g, 11.2g protein
+- Samosa: 252 kcal/piece
+
+Respond ONLY with a JSON object exactly like this, no backticks, no markdown, no other text:
+{"kcal": number, "protein": number, "carbs": number, "fat": number}
+Total meal should be 150-1500 kcal, protein 2-120g. Be realistic for mess portions.`
+      },
+      {
+        role: "user",
+        content: `Estimate nutrition for: ${description}`
+      }
+    ],
+    temperature: 0.3,
+    max_tokens: 100
+  };
+
+  const response = await fetch('/api/nvidia', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description })
+    body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `API Request failed: ${response.status}`);
+    const errorText = await response.text();
+    throw new Error(`API Request failed: ${response.status} ${errorText}`);
   }
 
-  return response.json();
-}
-
-// Legacy Gemini API function (kept for backwards compatibility, uses serverless endpoint now)
-async function callGeminiAPI(description) {
-  return callAIEstimatorAPI(description).then(result => ({
-    calories: result.kcal,
-    protein: result.protein,
-    carbs: result.carbs,
-    fat: result.fat
-  }));
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || '{}';
+  
+  // Extract JSON from response if wrapped
+  const match = content.match(/\{[\s\S]*?\}/);
+  if (match) {
+    return JSON.parse(match[0]);
+  }
+  return JSON.parse(content);
 }
 
 function displayAIResult(result, description) {
